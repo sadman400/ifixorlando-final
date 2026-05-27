@@ -1,0 +1,22 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ifixorlando-admin",
+  "account_id": "efaab2df05da0d895fb741e0d8d877d8",
+  "compatibility_date": "2025-09-24",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "@tanstack/react-start/server-entry",
+  "workers_dev": true,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "ifixorlando",
+      "database_id": "508b5fdc-249f-4fd9-b721-c7a612ad3c7f",
+    },
+  ],
+  "r2_buckets": [
+    {
+      "binding": "PHOTOS",
+      "bucket_name": "ifixorlando-photos",
+    },
+  ],
+}
