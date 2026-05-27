@@ -12,16 +12,22 @@ export interface Appointment {
   phone: string;
   email: string;
   address: string;
+  zip?: string;
+  unit?: string;
   // Device / job
   iPhoneModel: string;
+  screenColor?: string;
   description: string;
+  technicianName?: string;
   // Pricing
   cost: number;        // parts cost (what we paid)
   charge: number;      // base service charge
   addOns: AddOn[];
   coupon: number;      // discount amount
+  couponCode?: string;
   // Scheduling
   scheduledDate: string; // ISO
+  endDate?: string;
   status: AppointmentStatus;
   photos: string[];
   notes?: string;

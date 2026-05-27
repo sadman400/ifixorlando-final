@@ -29,12 +29,28 @@ function parseDate(value: string) {
   return date.toISOString();
 }
 
+function parseOptionalDate(value: string) {
+  if (!value) return undefined;
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+}
+
 function parseAddOns(value: string): AddOn[] {
   return value
     .split(",")
     .map((part) => part.trim())
     .filter(Boolean)
     .map((name) => ({ name, price: 0 }));
+}
+
+function inferScreenColor(...values: string[]) {
+  const joined = values.join(" ").toLowerCase();
+
+  if (/\bwhite\s+screen\b/.test(joined)) return "White";
+  if (/\bblack\s+screen\b/.test(joined)) return "Black";
+
+  return "";
 }
 
 export function appointmentFromZapierPayload(payload: Record<string, unknown>): Appointment {
@@ -97,6 +113,10 @@ export function appointmentFromZapierPayload(payload: Record<string, unknown>): 
       "address",
       "address_line_1",
     ),
+    zip: pick(payload, "Consumers Address Zip", "consumers_address_zip", "zip") || undefined,
+    unit:
+      pick(payload, "Consumers Unit Floor", "consumers_unit_floor", "unit_floor", "unit") ||
+      undefined,
     iPhoneModel: pick(
       payload,
       "Services Title",
@@ -106,24 +126,24 @@ export function appointmentFromZapierPayload(payload: Record<string, unknown>): 
       "device_model",
       "iphone_model",
     ),
+    screenColor: inferScreenColor(
+      pick(payload, "Services Title", "services_title"),
+      description,
+      pick(payload, "Add Ons", "add_ons", "addons"),
+    ),
     description,
+    technicianName: pick(payload, "Technician Name", "technician_name") || undefined,
     cost: money(pick(payload, "Parts Cost", "parts_cost", "internal_cost")),
     charge: servicesCharge || servicesCost,
     addOns,
     coupon: couponAmount,
+    couponCode: couponValue || undefined,
     scheduledDate: parseDate(pick(payload, "Start", "start", "scheduled_start", "scheduledDate")),
+    endDate: parseOptionalDate(pick(payload, "End", "end", "scheduled_end")),
     status: "scheduled",
     photos: [],
     notes: [
-      pick(payload, "Consumers Address Zip", "consumers_address_zip", "zip") &&
-        `ZIP: ${pick(payload, "Consumers Address Zip", "consumers_address_zip", "zip")}`,
-      pick(payload, "Consumers Unit Floor", "consumers_unit_floor", "unit_floor") &&
-        `Unit/Floor: ${pick(payload, "Consumers Unit Floor", "consumers_unit_floor", "unit_floor")}`,
-      pick(payload, "Technician Notes", "technician_notes") &&
-        `Technician Notes: ${pick(payload, "Technician Notes", "technician_notes")}`,
-      couponValue && !couponAmount && `Coupon Code: ${couponValue}`,
-      pick(payload, "End", "end", "scheduled_end") &&
-        `End: ${pick(payload, "End", "end", "scheduled_end")}`,
+      pick(payload, "Technician Notes", "technician_notes"),
     ]
       .filter(Boolean)
       .join("\n"),

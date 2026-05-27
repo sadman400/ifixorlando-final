@@ -9,6 +9,8 @@ interface CustomerRow {
   phone: string;
   email: string;
   address: string;
+  zip: string;
+  unit_floor: string;
 }
 
 interface AppointmentRow {
@@ -19,7 +21,11 @@ interface AppointmentRow {
   cost: number;
   charge: number;
   coupon: number;
+  coupon_code: string;
   scheduled_date: string;
+  scheduled_end: string | null;
+  technician_name: string;
+  screen_color: string;
   status: Appointment["status"];
   notes: string | null;
   created_at: string;
@@ -58,14 +64,24 @@ function rows<T>(result: { results?: T[] }) {
   return result.results ?? [];
 }
 
+function noteValue(notes: string | null, label: string) {
+  if (!notes) return "";
+
+  const match = notes.match(new RegExp(`${label}:\\s*([^\\n]+)`, "i"));
+  return match?.[1]?.trim() ?? "";
+}
+
 export async function getRepairData(db: D1Database): Promise<RepairData> {
   const [customerResult, appointmentResult, addOnResult, photoResult, stockResult, pricingResult] =
     await Promise.all([
-      db.prepare("SELECT id, name, phone, email, address FROM customers").all<CustomerRow>(),
+      db
+        .prepare("SELECT id, name, phone, email, address, zip, unit_floor FROM customers")
+        .all<CustomerRow>(),
       db
         .prepare(
-          `SELECT id, customer_id, iphone_model, description, cost, charge, coupon, scheduled_date,
-            status, notes, created_at, updated_at, completed_at
+          `SELECT id, customer_id, iphone_model, description, cost, charge, coupon, coupon_code,
+            scheduled_date, scheduled_end, technician_name, screen_color, status, notes,
+            created_at, updated_at, completed_at
            FROM appointments
            ORDER BY scheduled_date DESC`,
         )
@@ -107,6 +123,10 @@ export async function getRepairData(db: D1Database): Promise<RepairData> {
 
   const appointments: Appointment[] = rows(appointmentResult).map((appointment) => {
     const customer = customers.get(appointment.customer_id);
+    const fallbackUnit = noteValue(appointment.notes, "Unit/Floor");
+    const fallbackZip = noteValue(appointment.notes, "ZIP");
+    const fallbackEnd = noteValue(appointment.notes, "End");
+    const fallbackCouponCode = noteValue(appointment.notes, "Coupon Code");
 
     return {
       id: appointment.id,
@@ -114,13 +134,19 @@ export async function getRepairData(db: D1Database): Promise<RepairData> {
       phone: customer?.phone ?? "",
       email: customer?.email ?? "",
       address: customer?.address ?? "",
+      zip: customer?.zip || fallbackZip || undefined,
+      unit: customer?.unit_floor || fallbackUnit || undefined,
       iPhoneModel: appointment.iphone_model,
+      screenColor: appointment.screen_color || undefined,
       description: appointment.description,
+      technicianName: appointment.technician_name || undefined,
       cost: Number(appointment.cost) || 0,
       charge: Number(appointment.charge) || 0,
       addOns: addOnsByAppointment.get(appointment.id) ?? [],
       coupon: Number(appointment.coupon) || 0,
+      couponCode: appointment.coupon_code || fallbackCouponCode || undefined,
       scheduledDate: appointment.scheduled_date,
+      endDate: appointment.scheduled_end || parseFallbackDate(fallbackEnd) || undefined,
       status: appointment.status,
       photos: photosByAppointment.get(appointment.id) ?? [],
       notes: appointment.notes ?? undefined,
@@ -211,10 +237,11 @@ export async function upsertAppointment(
   await db
     .prepare(
       `INSERT INTO appointments (
-        id, customer_id, iphone_model, description, cost, charge, coupon, scheduled_date,
-        status, notes, source, created_at, updated_at, completed_at
+        id, customer_id, iphone_model, description, cost, charge, coupon, coupon_code,
+        scheduled_date, scheduled_end, technician_name, screen_color, status, notes, source,
+        created_at, updated_at, completed_at
       )
-      VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)
+      VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18)
       ON CONFLICT(id) DO UPDATE SET
         customer_id = excluded.customer_id,
         iphone_model = excluded.iphone_model,
@@ -222,7 +249,11 @@ export async function upsertAppointment(
         cost = excluded.cost,
         charge = excluded.charge,
         coupon = excluded.coupon,
+        coupon_code = excluded.coupon_code,
         scheduled_date = excluded.scheduled_date,
+        scheduled_end = excluded.scheduled_end,
+        technician_name = excluded.technician_name,
+        screen_color = excluded.screen_color,
         status = excluded.status,
         notes = excluded.notes,
         source = excluded.source,
@@ -237,7 +268,11 @@ export async function upsertAppointment(
       appointment.cost,
       appointment.charge,
       appointment.coupon,
+      appointment.couponCode ?? "",
       appointment.scheduledDate,
+      appointment.endDate ?? null,
+      appointment.technicianName ?? "",
+      appointment.screenColor ?? "",
       appointment.status,
       appointment.notes ?? null,
       source,
@@ -309,12 +344,14 @@ async function getOrCreateCustomer(db: D1Database, appointment: Appointment, now
   await db
     .prepare(
       `INSERT INTO customers (id, name, phone, email, address, zip, unit_floor, created_at, updated_at)
-       VALUES (?1, ?2, ?3, ?4, ?5, '', '', ?6, ?7)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
        ON CONFLICT(id) DO UPDATE SET
         name = excluded.name,
         phone = excluded.phone,
         email = excluded.email,
         address = excluded.address,
+        zip = excluded.zip,
+        unit_floor = excluded.unit_floor,
         updated_at = excluded.updated_at`,
     )
     .bind(
@@ -323,10 +360,19 @@ async function getOrCreateCustomer(db: D1Database, appointment: Appointment, now
       appointment.phone,
       appointment.email,
       appointment.address,
+      appointment.zip ?? "",
+      appointment.unit ?? "",
       now,
       now,
     )
     .run();
 
   return id;
+}
+
+function parseFallbackDate(value: string) {
+  if (!value) return "";
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "" : date.toISOString();
 }
