@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { createId } from "@/lib/id";
+import { cleanInventoryModel, screenColorLabelFor } from "@/lib/inventory";
 import { useRepairStore } from "@/lib/repair-store";
 import type { StockItem } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -29,7 +30,7 @@ function Stocks() {
     if (!draft.iPhoneModel.trim()) return;
     addStock({
       id: createId("stock"),
-      iPhoneModel: cleanModel(draft.iPhoneModel.trim()),
+      iPhoneModel: cleanInventoryModel(draft.iPhoneModel.trim()),
       screenColor: draft.screenColor,
       quantity: draft.quantity,
       costPerUnit: 0,
@@ -191,7 +192,9 @@ function StockRow({
           </Button>
         </div>
       </td>
-      <td className="px-4 py-3 font-medium text-foreground">{cleanModel(s.iPhoneModel)}</td>
+      <td className="px-4 py-3 font-medium text-foreground">
+        {cleanInventoryModel(s.iPhoneModel)}
+      </td>
       <td className="px-4 py-3 text-muted-foreground">{screenColorLabel(s)}</td>
       <td className="px-4 py-3 text-right">
         <Input
@@ -227,18 +230,6 @@ function orderStocks(stocks: StockItem[]) {
     .map(({ stock }) => stock);
 }
 
-function cleanModel(value: string) {
-  return value.replace(/\s+-?\s*(black|white)\s+screen\b/i, "").trim();
-}
-
 function screenColorLabel(stock: StockItem) {
-  const color = stock.screenColor || screenColorFromText(stock.iPhoneModel);
-  return color ? `${color.replace(/\s+screen$/i, "")} Screen` : "-";
-}
-
-function screenColorFromText(value: string) {
-  const source = value.toLowerCase();
-  if (/\bwhite\s+screen\b/.test(source)) return "White";
-  if (/\bblack\s+screen\b/.test(source)) return "Black";
-  return "";
+  return screenColorLabelFor(stock) || "-";
 }

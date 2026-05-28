@@ -1,5 +1,19 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import {
+  businessDateTimeLocalToIso,
+  formatBusinessDateTime,
+  formatBusinessLongDate,
+  formatBusinessTime,
+  toBusinessDateTimeLocal,
+} from "@/lib/date-time";
+import {
+  appointmentLabel,
+  cleanInventoryModel,
+  findStockForAppointment,
+  screenColorLabelFor,
+  screenColorNameFor,
+} from "@/lib/inventory";
 import { useRepairStore } from "@/lib/repair-store";
 import {
   appointmentProfit,
@@ -30,20 +44,7 @@ function AppointmentDetail() {
   const stockMatch = useMemo(() => {
     if (!appt) return undefined;
 
-    const model = cleanModel(appt.iPhoneModel).toLowerCase();
-    const screenColor = screenColorFor(appt).toLowerCase();
-
-    return (
-      stocks.find(
-        (stock) =>
-          cleanModel(stock.iPhoneModel).toLowerCase() === model &&
-          (!screenColor ||
-            screenColorFor({
-              iPhoneModel: stock.iPhoneModel,
-              screenColor: stock.screenColor,
-            }).toLowerCase() === screenColor),
-      ) ?? stocks.find((stock) => cleanModel(stock.iPhoneModel).toLowerCase() === model)
-    );
+    return findStockForAppointment(stocks, appt);
   }, [appt, stocks]);
 
   if (!appt) {
@@ -86,7 +87,12 @@ function AppointmentDetail() {
           <Button variant="outline" size="sm" onClick={() => setEditing(!editing)}>
             {editing ? "Cancel" : "Edit"}
           </Button>
-          <Button variant="ghost" size="icon" onClick={handleDelete} aria-label="Delete appointment">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleDelete}
+            aria-label="Delete appointment"
+          >
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
@@ -162,7 +168,7 @@ function ViewMode({
       <Section title="Service">
         <div className="grid gap-3 sm:grid-cols-2">
           <Detail label="Device Model" value={cleanModel(appt.iPhoneModel)} />
-          <Detail label="Screen Color" value={screenColorFor(appt) || "-"} />
+          <Detail label="Screen Color" value={screenColorLabelFor(appt) || "-"} />
           <Detail
             label="In Stock"
             value={
@@ -171,6 +177,7 @@ function ViewMode({
                 : "Not tracked"
             }
           />
+          <Detail label="Parts Cost" value={`$${appt.cost.toFixed(2)}`} />
           <Detail label="Start Time" value={formatDateTime(appt.scheduledDate)} />
           <Detail label="End Time" value={appt.endDate ? formatDateTime(appt.endDate) : "-"} />
           <Detail label="Coupon Code" value={appt.couponCode || "-"} />
@@ -270,8 +277,8 @@ function EditForm({
     cost: appt.cost,
     coupon: appt.coupon,
     couponCode: appt.couponCode || "",
-    scheduledDate: toDateTimeLocal(appt.scheduledDate),
-    endDate: appt.endDate ? toDateTimeLocal(appt.endDate) : "",
+    scheduledDate: toBusinessDateTimeLocal(appt.scheduledDate),
+    endDate: appt.endDate ? toBusinessDateTimeLocal(appt.endDate) : "",
   });
 
   const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
@@ -285,8 +292,8 @@ function EditForm({
           ...form,
           iPhoneModel: `${cleanModel(form.iPhoneModel)} - ${form.screenColor} Screen`,
           screenColor: form.screenColor,
-          scheduledDate: new Date(form.scheduledDate).toISOString(),
-          endDate: form.endDate ? new Date(form.endDate).toISOString() : undefined,
+          scheduledDate: businessDateTimeLocalToIso(form.scheduledDate),
+          endDate: form.endDate ? businessDateTimeLocalToIso(form.endDate) : undefined,
         });
       }}
       className="space-y-4"
@@ -316,10 +323,7 @@ function EditForm({
             />
           </Field>
           <Field label="Address">
-            <Input
-              value={form.address}
-              onChange={(event) => set("address", event.target.value)}
-            />
+            <Input value={form.address} onChange={(event) => set("address", event.target.value)} />
           </Field>
           <Field label="ZIP">
             <Input value={form.zip} onChange={(event) => set("zip", event.target.value)} />
@@ -552,72 +556,17 @@ function Row({
 }
 
 function cleanModel(value: string) {
-  return value.replace(/\s+-\s+(black|white)\s+screen\b/i, "").trim();
-}
-
-function screenColorNameFor(value: {
-  iPhoneModel: string;
-  screenColor?: string;
-  description?: string;
-}) {
-  if (value.screenColor) return value.screenColor.replace(/\s+screen$/i, "");
-
-  const source = `${value.iPhoneModel} ${value.description || ""}`.toLowerCase();
-  if (/\bwhite\s+screen\b/.test(source)) return "White";
-  if (/\bblack\s+screen\b/.test(source)) return "Black";
-
-  return "";
-}
-
-function screenColorFor(value: { iPhoneModel: string; screenColor?: string; description?: string }) {
-  const color = screenColorNameFor(value);
-  return color ? `${color} Screen` : "";
-}
-
-function appointmentLabel(appt: Appointment) {
-  const screenColor = screenColorFor(appt);
-  return [cleanModel(appt.iPhoneModel), screenColor && `${screenColor.replace(/\s+screen$/i, "")} Screen`]
-    .filter(Boolean)
-    .join(" - ");
+  return cleanInventoryModel(value);
 }
 
 function formatDateTime(value: string) {
-  if (!value) return "-";
-
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "-" : date.toLocaleString();
+  return formatBusinessDateTime(value);
 }
 
 function formatLongDate(value: string) {
-  if (!value) return "[date]";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "[date]";
-
-  return date.toLocaleDateString([], {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  return formatBusinessLongDate(value);
 }
 
 function formatTime(value: string) {
-  if (!value) return "[time]";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "[time]";
-
-  return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-}
-
-function toDateTimeLocal(value: string) {
-  if (!value) return "";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-
-  const offset = date.getTimezoneOffset();
-  const local = new Date(date.getTime() - offset * 60_000);
-  return local.toISOString().slice(0, 16);
+  return formatBusinessTime(value);
 }

@@ -8,6 +8,7 @@ import {
   DEFAULT_STOCKS,
   type RepairData,
 } from "@/lib/repair-store";
+import { findStockForAppointment } from "@/lib/inventory";
 import { generateSampleData } from "@/lib/sample-data";
 import type { Appointment, StockItem, PricingItem, AppointmentStatus } from "@/lib/types";
 
@@ -63,9 +64,7 @@ export function RepairProvider({ children }: { children: ReactNode }) {
 
   const updateStatus = useCallback(
     (id: string, status: AppointmentStatus) => {
-      setData((prev) =>
-        persist(applyStatusUpdate(prev, id, status)),
-      );
+      setData((prev) => persist(applyStatusUpdate(prev, id, status)));
     },
     [persist],
   );
@@ -221,50 +220,4 @@ function applyStatusUpdate(
           )
         : data.stocks,
   };
-}
-
-function findStockForAppointment(stocks: StockItem[], appointment: Appointment) {
-  const model = cleanModel(appointment.iPhoneModel);
-  const color = screenColorName(appointment);
-  const normalizedModel = normalize(model);
-  const normalizedColor = normalize(color);
-
-  const colorSpecific =
-    normalizedColor &&
-    stocks.find((stock) => {
-      const stockModel = normalize(cleanModel(stock.iPhoneModel));
-      const stockColor = normalize(stock.screenColor || screenColorNameFromText(stock.iPhoneModel));
-
-      return stockModel === normalizedModel && stockColor === normalizedColor;
-    });
-
-  return (
-    colorSpecific ||
-    stocks.find((stock) => normalize(stock.iPhoneModel) === normalizedModel) ||
-    stocks.find((stock) => normalize(stock.iPhoneModel).includes(normalizedModel))
-  );
-}
-
-function cleanModel(value: string) {
-  return value.replace(/\s+-?\s*(black|white)\s+screen\b/i, "").trim();
-}
-
-function screenColorName(appointment: Appointment) {
-  if (appointment.screenColor) {
-    return appointment.screenColor.replace(/\s+screen$/i, "");
-  }
-
-  return screenColorNameFromText(`${appointment.iPhoneModel} ${appointment.description}`);
-}
-
-function screenColorNameFromText(value: string) {
-  const source = value.toLowerCase();
-  if (/\bwhite\s+screen\b/.test(source)) return "White";
-  if (/\bblack\s+screen\b/.test(source)) return "Black";
-
-  return "";
-}
-
-function normalize(value: string) {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 }

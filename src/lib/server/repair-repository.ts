@@ -1,4 +1,5 @@
 import type { D1Database } from "@/lib/cloudflare-types";
+import { parseBusinessDateToIso } from "@/lib/date-time";
 import { createId } from "@/lib/id";
 import { DEFAULT_PRICING, DEFAULT_STOCKS, type RepairData } from "@/lib/repair-store";
 import type { AddOn, Appointment, PricingItem, StockItem } from "@/lib/types";
@@ -381,6 +382,5 @@ async function getOrCreateCustomer(db: D1Database, appointment: Appointment, now
 function parseFallbackDate(value: string) {
   if (!value) return "";
 
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "" : date.toISOString();
+  return parseBusinessDateToIso(value, "");
 }

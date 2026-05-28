@@ -1,4 +1,5 @@
 import { createId } from "@/lib/id";
+import { parseBusinessDateToIso } from "@/lib/date-time";
 import type { AddOn, Appointment } from "@/lib/types";
 
 function pick(payload: Record<string, unknown>, ...keys: string[]) {
@@ -20,20 +21,13 @@ function money(value: string) {
 }
 
 function parseDate(value: string) {
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return new Date().toISOString();
-  }
-
-  return date.toISOString();
+  return parseBusinessDateToIso(value);
 }
 
 function parseOptionalDate(value: string) {
   if (!value) return undefined;
 
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+  return parseBusinessDateToIso(value, "") || undefined;
 }
 
 function parseAddOns(value: string): AddOn[] {
@@ -98,13 +92,7 @@ export function appointmentFromZapierPayload(payload: Record<string, unknown>): 
       "phone",
       "mobile",
     ),
-    email: pick(
-      payload,
-      "Consumers Email",
-      "Consumer Email",
-      "consumers_email",
-      "email",
-    ),
+    email: pick(payload, "Consumers Email", "Consumer Email", "consumers_email", "email"),
     address: pick(
       payload,
       "Consumers Address Line 1",
@@ -142,11 +130,7 @@ export function appointmentFromZapierPayload(payload: Record<string, unknown>): 
     endDate: parseOptionalDate(pick(payload, "End", "end", "scheduled_end")),
     status: "scheduled",
     photos: [],
-    notes: [
-      pick(payload, "Technician Notes", "technician_notes"),
-    ]
-      .filter(Boolean)
-      .join("\n"),
+    notes: [pick(payload, "Technician Notes", "technician_notes")].filter(Boolean).join("\n"),
     createdAt: now,
     updatedAt: now,
   };

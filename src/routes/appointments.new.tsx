@@ -1,6 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { businessDateTimeLocalToIso, toBusinessDateTimeLocal } from "@/lib/date-time";
 import { createId } from "@/lib/id";
+import { cleanInventoryModel } from "@/lib/inventory";
 import { useRepairStore } from "@/lib/repair-store";
 import type { AddOn, Appointment } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -23,20 +25,26 @@ function NewAppointment() {
     email: "",
     address: "",
     iPhoneModel: "iPhone 14",
+    screenColor: "Black",
     description: "",
     cost: 0,
     charge: 0,
     coupon: 0,
-    scheduledDate: new Date().toISOString().slice(0, 16),
+    scheduledDate: toBusinessDateTimeLocal(new Date().toISOString()),
   });
   const [addOns, setAddOns] = useState<AddOn[]>([]);
+  const stockModels = useMemo(
+    () => [...new Set(stocks.map((stock) => cleanInventoryModel(stock.iPhoneModel)))],
+    [stocks],
+  );
 
   const setField = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
     setForm((prev) => ({ ...prev, [k]: v }));
 
   const applyPricingPreset = (model: string) => {
     setField("iPhoneModel", model);
-    const match = pricing.find((p) => p.iPhoneModel === model);
+    const cleanedModel = cleanInventoryModel(model);
+    const match = pricing.find((p) => cleanInventoryModel(p.iPhoneModel) === cleanedModel);
     if (match) {
       setField("charge", match.price);
       setField("cost", match.partsCost);
@@ -57,13 +65,14 @@ function NewAppointment() {
       phone: form.phone.trim(),
       email: form.email.trim(),
       address: form.address.trim(),
-      iPhoneModel: form.iPhoneModel,
+      iPhoneModel: `${cleanInventoryModel(form.iPhoneModel)} - ${form.screenColor} Screen`,
+      screenColor: form.screenColor,
       description: form.description.trim(),
       cost: Number(form.cost) || 0,
       charge: Number(form.charge) || 0,
       coupon: Number(form.coupon) || 0,
       addOns,
-      scheduledDate: new Date(form.scheduledDate).toISOString(),
+      scheduledDate: businessDateTimeLocalToIso(form.scheduledDate),
       status: "scheduled",
       photos: [],
       createdAt: new Date().toISOString(),
@@ -123,10 +132,28 @@ function NewAppointment() {
               placeholder="Select or type model"
             />
             <datalist id="iphone-models">
-              {stocks.map((s) => (
-                <option key={s.id} value={s.iPhoneModel} />
+              {stockModels.map((model) => (
+                <option key={model} value={model} />
               ))}
             </datalist>
+          </Field>
+          <Field label="Screen Color">
+            <div className="flex gap-2">
+              {["Black", "White"].map((color) => (
+                <button
+                  key={color}
+                  type="button"
+                  onClick={() => setField("screenColor", color)}
+                  className={`flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
+                    form.screenColor === color
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {color} Screen
+                </button>
+              ))}
+            </div>
           </Field>
           <Field label="Scheduled Date">
             <Input
