@@ -37,9 +37,11 @@ export const appointmentSchema = z.object({
 export const stockItemSchema = z.object({
   id: z.string(),
   iPhoneModel: z.string(),
+  screenColor: z.string().optional(),
   quantity: z.coerce.number().int().default(0),
   costPerUnit: z.coerce.number().default(0),
   lowStockThreshold: z.coerce.number().int().default(0),
+  sortOrder: z.coerce.number().int().optional(),
 });
 
 export const pricingItemSchema = z.object({

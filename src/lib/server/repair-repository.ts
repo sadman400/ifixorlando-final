@@ -47,9 +47,11 @@ interface PhotoRow {
 interface StockRow {
   id: string;
   iphone_model: string;
+  screen_color: string;
   quantity: number;
   cost_per_unit: number;
   low_stock_threshold: number;
+  sort_order: number;
 }
 
 interface PricingRow {
@@ -90,9 +92,9 @@ export async function getRepairData(db: D1Database): Promise<RepairData> {
       db.prepare("SELECT appointment_id, url FROM appointment_photos").all<PhotoRow>(),
       db
         .prepare(
-          `SELECT id, iphone_model, quantity, cost_per_unit, low_stock_threshold
+          `SELECT id, iphone_model, screen_color, quantity, cost_per_unit, low_stock_threshold, sort_order
            FROM stock_items
-           ORDER BY iphone_model`,
+           ORDER BY sort_order, iphone_model, screen_color`,
         )
         .all<StockRow>(),
       db
@@ -159,9 +161,11 @@ export async function getRepairData(db: D1Database): Promise<RepairData> {
   const stocks: StockItem[] = rows(stockResult).map((stock) => ({
     id: stock.id,
     iPhoneModel: stock.iphone_model,
+    screenColor: stock.screen_color || undefined,
     quantity: Number(stock.quantity) || 0,
     costPerUnit: Number(stock.cost_per_unit) || 0,
     lowStockThreshold: Number(stock.low_stock_threshold) || 0,
+    sortOrder: Number(stock.sort_order) || 0,
   }));
 
   const pricing: PricingItem[] = rows(pricingResult).map((item) => ({
@@ -198,15 +202,19 @@ export async function replaceRepairData(db: D1Database, data: RepairData) {
       data.stocks.map((stock) =>
         db
           .prepare(
-            `INSERT INTO stock_items (id, iphone_model, quantity, cost_per_unit, low_stock_threshold)
-             VALUES (?1, ?2, ?3, ?4, ?5)`,
+            `INSERT INTO stock_items (
+              id, iphone_model, screen_color, quantity, cost_per_unit, low_stock_threshold, sort_order
+             )
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)`,
           )
           .bind(
             stock.id,
             stock.iPhoneModel,
+            stock.screenColor ?? "",
             stock.quantity,
             stock.costPerUnit,
             stock.lowStockThreshold,
+            stock.sortOrder ?? 0,
           ),
       ),
     );

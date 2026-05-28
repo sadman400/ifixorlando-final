@@ -39,9 +39,11 @@ export interface Appointment {
 export interface StockItem {
   id: string;
   iPhoneModel: string;
+  screenColor?: string;
   quantity: number;
   costPerUnit: number;
   lowStockThreshold: number;
+  sortOrder?: number;
 }
 
 export interface PricingItem {

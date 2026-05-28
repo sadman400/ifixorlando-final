@@ -67,9 +67,11 @@ CREATE INDEX IF NOT EXISTS idx_appointment_photos_appointment_id ON appointment_
 CREATE TABLE IF NOT EXISTS stock_items (
   id TEXT PRIMARY KEY,
   iphone_model TEXT NOT NULL,
+  screen_color TEXT NOT NULL DEFAULT '',
   quantity INTEGER NOT NULL DEFAULT 0,
   cost_per_unit REAL NOT NULL DEFAULT 0,
-  low_stock_threshold INTEGER NOT NULL DEFAULT 0
+  low_stock_threshold INTEGER NOT NULL DEFAULT 0,
+  sort_order INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS pricing_items (

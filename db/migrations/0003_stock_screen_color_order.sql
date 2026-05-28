@@ -1,0 +1,2 @@
+ALTER TABLE stock_items ADD COLUMN screen_color TEXT NOT NULL DEFAULT '';
+ALTER TABLE stock_items ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0;

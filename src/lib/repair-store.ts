@@ -19,6 +19,7 @@ export interface RepairStore extends RepairData {
   addStock: (s: StockItem) => void;
   updateStock: (id: string, updates: Partial<StockItem>) => void;
   deleteStock: (id: string) => void;
+  reorderStocks: (stocks: StockItem[]) => void;
 
   addPricing: (p: PricingItem) => void;
   updatePricing: (id: string, updates: Partial<PricingItem>) => void;

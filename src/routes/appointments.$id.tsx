@@ -37,7 +37,11 @@ function AppointmentDetail() {
       stocks.find(
         (stock) =>
           cleanModel(stock.iPhoneModel).toLowerCase() === model &&
-          (!screenColor || screenColorFor({ iPhoneModel: stock.iPhoneModel }).toLowerCase() === screenColor),
+          (!screenColor ||
+            screenColorFor({
+              iPhoneModel: stock.iPhoneModel,
+              screenColor: stock.screenColor,
+            }).toLowerCase() === screenColor),
       ) ?? stocks.find((stock) => cleanModel(stock.iPhoneModel).toLowerCase() === model)
     );
   }, [appt, stocks]);
