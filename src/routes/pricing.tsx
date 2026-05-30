@@ -6,14 +6,14 @@ import type { PricingItem } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/pricing")({
   component: Pricing,
 });
 
 function Pricing() {
-  const { pricing, addPricing, updatePricing, deletePricing } = useRepairStore();
+  const { pricing, addPricing, updatePricing, deletePricing, reorderPricing } = useRepairStore();
   const [showForm, setShowForm] = useState(false);
   const [draft, setDraft] = useState({
     iPhoneModel: "",
@@ -30,9 +30,24 @@ function Pricing() {
       ...draft,
       iPhoneModel: draft.iPhoneModel.trim(),
       repairType: draft.repairType.trim(),
+      sortOrder: orderedPricing.length,
     });
     setDraft({ iPhoneModel: "", repairType: "Screen Replacement", price: 0, partsCost: 0 });
     setShowForm(false);
+  };
+
+  const orderedPricing = orderPricing(pricing);
+
+  const movePricing = (id: string, direction: -1 | 1) => {
+    const currentIndex = orderedPricing.findIndex((item) => item.id === id);
+    const nextIndex = currentIndex + direction;
+
+    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= orderedPricing.length) return;
+
+    const next = [...orderedPricing];
+    const [moved] = next.splice(currentIndex, 1);
+    next.splice(nextIndex, 0, moved);
+    reorderPricing(next);
   };
 
   return (
@@ -70,7 +85,7 @@ function Pricing() {
             />
           </div>
           <div>
-            <Label className="text-xs">Price ($)</Label>
+            <Label className="text-xs">Repair Price ($)</Label>
             <Input
               type="number"
               min="0"
@@ -99,20 +114,18 @@ function Pricing() {
       )}
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {[...pricing]
-          .sort((a, b) => {
-            const na = parseInt(a.iPhoneModel.replace(/\D/g, ""), 10) || 0;
-            const nb = parseInt(b.iPhoneModel.replace(/\D/g, ""), 10) || 0;
-            return na - nb;
-          })
-          .map((p) => (
-            <PricingCard
-              key={p.id}
-              p={p}
-              onUpdate={(u) => updatePricing(p.id, u)}
-              onDelete={() => deletePricing(p.id)}
-            />
-          ))}
+        {orderedPricing.map((p, index) => (
+          <PricingCard
+            key={p.id}
+            p={p}
+            isFirst={index === 0}
+            isLast={index === orderedPricing.length - 1}
+            onMoveUp={() => movePricing(p.id, -1)}
+            onMoveDown={() => movePricing(p.id, 1)}
+            onUpdate={(u) => updatePricing(p.id, u)}
+            onDelete={() => deletePricing(p.id)}
+          />
+        ))}
       </div>
     </div>
   );
@@ -120,10 +133,18 @@ function Pricing() {
 
 function PricingCard({
   p,
+  isFirst,
+  isLast,
+  onMoveUp,
+  onMoveDown,
   onUpdate,
   onDelete,
 }: {
   p: PricingItem;
+  isFirst: boolean;
+  isLast: boolean;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
   onUpdate: (u: Partial<PricingItem>) => void;
   onDelete: () => void;
 }) {
@@ -131,18 +152,36 @@ function PricingCard({
   return (
     <div className="glass-card rounded-xl p-4">
       <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="font-semibold text-foreground">{p.iPhoneModel}</p>
-          <p className="text-xs text-muted-foreground">{p.repairType}</p>
+        <div className="min-w-0 flex-1 space-y-2">
+          <Input
+            value={p.iPhoneModel}
+            onChange={(e) => onUpdate({ iPhoneModel: e.target.value })}
+            className="h-9 border-0 bg-transparent px-0 text-base font-semibold text-foreground shadow-none focus-visible:ring-0"
+            aria-label="iPhone model"
+          />
+          <Input
+            value={p.repairType}
+            onChange={(e) => onUpdate({ repairType: e.target.value })}
+            className="h-8 border-0 bg-transparent px-0 text-xs text-muted-foreground shadow-none focus-visible:ring-0"
+            aria-label="Repair type"
+          />
         </div>
-        <Button variant="ghost" size="icon" onClick={onDelete} className="-mr-2 -mt-1">
-          <Trash2 className="h-4 w-4" />
-        </Button>
+        <div className="-mr-2 -mt-1 flex gap-1">
+          <Button variant="ghost" size="icon" onClick={onMoveUp} disabled={isFirst}>
+            <ArrowUp className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={onMoveDown} disabled={isLast}>
+            <ArrowDown className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={onDelete}>
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2">
         <div>
           <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">
-            Price ($)
+            Repair Price ($)
           </Label>
           <Input
             type="number"
@@ -173,4 +212,11 @@ function PricingCard({
       </div>
     </div>
   );
+}
+
+function orderPricing(pricing: PricingItem[]) {
+  return pricing
+    .map((item, index) => ({ item, index }))
+    .sort((a, b) => (a.item.sortOrder ?? a.index) - (b.item.sortOrder ?? b.index))
+    .map(({ item }) => item);
 }

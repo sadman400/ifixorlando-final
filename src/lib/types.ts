@@ -1,4 +1,4 @@
-export type AppointmentStatus = 'scheduled' | 'completed' | 'cancelled';
+export type AppointmentStatus = "scheduled" | "completed" | "cancelled";
 
 export interface AddOn {
   name: string;
@@ -20,10 +20,10 @@ export interface Appointment {
   description: string;
   technicianName?: string;
   // Pricing
-  cost: number;        // parts cost (what we paid)
-  charge: number;      // base service charge
+  cost: number; // parts cost (what we paid)
+  charge: number; // base service charge
   addOns: AddOn[];
-  coupon: number;      // discount amount
+  coupon: number; // discount amount
   couponCode?: string;
   // Scheduling
   scheduledDate: string; // ISO
@@ -50,8 +50,9 @@ export interface PricingItem {
   id: string;
   iPhoneModel: string;
   repairType: string;
-  price: number;     // retail
+  price: number; // retail
   partsCost: number; // our cost
+  sortOrder?: number;
 }
 
 export function appointmentTotal(a: Appointment): number {

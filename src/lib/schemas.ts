@@ -50,6 +50,7 @@ export const pricingItemSchema = z.object({
   repairType: z.string(),
   price: z.coerce.number().default(0),
   partsCost: z.coerce.number().default(0),
+  sortOrder: z.coerce.number().int().optional(),
 });
 
 export const repairDataSchema = z.object({

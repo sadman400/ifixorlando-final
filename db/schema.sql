@@ -80,6 +80,7 @@ CREATE TABLE IF NOT EXISTS pricing_items (
   repair_type TEXT NOT NULL,
   price REAL NOT NULL DEFAULT 0,
   parts_cost REAL NOT NULL DEFAULT 0,
+  sort_order INTEGER NOT NULL DEFAULT 0,
   active INTEGER NOT NULL DEFAULT 1
 );
 

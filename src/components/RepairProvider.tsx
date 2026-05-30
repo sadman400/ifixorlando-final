@@ -141,6 +141,17 @@ export function RepairProvider({ children }: { children: ReactNode }) {
     },
     [persist],
   );
+  const reorderPricing = useCallback(
+    (pricing: PricingItem[]) => {
+      setData((prev) =>
+        persist({
+          ...prev,
+          pricing: pricing.map((item, index) => ({ ...item, sortOrder: index })),
+        }),
+      );
+    },
+    [persist],
+  );
 
   const seedSampleData = useCallback(() => {
     const sample = generateSampleData();
@@ -167,6 +178,7 @@ export function RepairProvider({ children }: { children: ReactNode }) {
         addPricing,
         updatePricing,
         deletePricing,
+        reorderPricing,
         seedSampleData,
         clearAll,
       }}

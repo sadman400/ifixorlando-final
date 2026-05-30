@@ -61,6 +61,7 @@ interface PricingRow {
   repair_type: string;
   price: number;
   parts_cost: number;
+  sort_order: number;
 }
 
 function rows<T>(result: { results?: T[] }) {
@@ -100,10 +101,10 @@ export async function getRepairData(db: D1Database): Promise<RepairData> {
         .all<StockRow>(),
       db
         .prepare(
-          `SELECT id, iphone_model, repair_type, price, parts_cost
+          `SELECT id, iphone_model, repair_type, price, parts_cost, sort_order
            FROM pricing_items
            WHERE active = 1
-           ORDER BY iphone_model, repair_type`,
+           ORDER BY sort_order, iphone_model, repair_type`,
         )
         .all<PricingRow>(),
     ]);
@@ -175,6 +176,7 @@ export async function getRepairData(db: D1Database): Promise<RepairData> {
     repairType: item.repair_type,
     price: Number(item.price) || 0,
     partsCost: Number(item.parts_cost) || 0,
+    sortOrder: Number(item.sort_order) || 0,
   }));
 
   return {
@@ -226,10 +228,19 @@ export async function replaceRepairData(db: D1Database, data: RepairData) {
       data.pricing.map((item) =>
         db
           .prepare(
-            `INSERT INTO pricing_items (id, iphone_model, repair_type, price, parts_cost, active)
-             VALUES (?1, ?2, ?3, ?4, ?5, 1)`,
+            `INSERT INTO pricing_items (
+              id, iphone_model, repair_type, price, parts_cost, sort_order, active
+             )
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, 1)`,
           )
-          .bind(item.id, item.iPhoneModel, item.repairType, item.price, item.partsCost),
+          .bind(
+            item.id,
+            item.iPhoneModel,
+            item.repairType,
+            item.price,
+            item.partsCost,
+            item.sortOrder ?? 0,
+          ),
       ),
     );
   }
