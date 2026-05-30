@@ -15,12 +15,7 @@ import {
   screenColorNameFor,
 } from "@/lib/inventory";
 import { useRepairStore } from "@/lib/repair-store";
-import {
-  appointmentProfit,
-  appointmentTotal,
-  type Appointment,
-  type AppointmentStatus,
-} from "@/lib/types";
+import { appointmentTotal, type Appointment, type AppointmentStatus } from "@/lib/types";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -129,6 +124,7 @@ function AppointmentDetail() {
         <ViewMode
           appt={appt}
           stockQuantity={stockMatch?.quantity}
+          stockPartsCost={stockMatch?.costPerUnit}
           onNotesChange={(notes) => updateAppointment(id, { notes })}
         />
       )}
@@ -149,12 +145,17 @@ function AppointmentDetail() {
 function ViewMode({
   appt,
   stockQuantity,
+  stockPartsCost,
   onNotesChange,
 }: {
   appt: Appointment;
   stockQuantity?: number;
+  stockPartsCost?: number;
   onNotesChange: (notes: string) => void;
 }) {
+  const partsCost = appt.cost > 0 ? appt.cost : (stockPartsCost ?? 0);
+  const profit = appointmentTotal(appt) - partsCost;
+
   return (
     <div className="space-y-4">
       <Section title="Customer">
@@ -177,7 +178,7 @@ function ViewMode({
                 : "Not tracked"
             }
           />
-          <Detail label="Parts Cost" value={`$${appt.cost.toFixed(2)}`} />
+          <Detail label="Parts Cost" value={`$${partsCost.toFixed(2)}`} />
           <Detail label="Start Time" value={formatDateTime(appt.scheduledDate)} />
           <Detail label="End Time" value={appt.endDate ? formatDateTime(appt.endDate) : "-"} />
           <Detail label="Coupon Code" value={appt.couponCode || "-"} />
@@ -241,10 +242,10 @@ function ViewMode({
           )}
           <div className="border-t border-border pt-2">
             <Row label="Total" value={`$${appointmentTotal(appt).toFixed(2)}`} bold />
-            <Row label="Parts Cost" value={`$${appt.cost.toFixed(2)}`} muted />
+            <Row label="Parts Cost" value={`$${partsCost.toFixed(2)}`} muted />
             <Row
               label="Profit"
-              value={`$${appointmentProfit(appt).toFixed(2)}`}
+              value={`$${profit.toFixed(2)}`}
               className="text-success"
               bold
             />

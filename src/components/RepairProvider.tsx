@@ -193,7 +193,12 @@ function applyStatusUpdate(
       : appointment.status === "completed" && nextStatus !== "completed"
         ? 1
         : 0;
-  const stockId = quantityDelta ? findStockForAppointment(data.stocks, appointment)?.id : undefined;
+  const stockMatch = quantityDelta ? findStockForAppointment(data.stocks, appointment) : undefined;
+  const stockId = stockMatch?.id;
+  const nextCost =
+    nextStatus === "completed" && appointment.cost <= 0 && stockMatch?.costPerUnit
+      ? stockMatch.costPerUnit
+      : appointment.cost;
   const now = new Date().toISOString();
 
   return {
@@ -203,6 +208,7 @@ function applyStatusUpdate(
         ? {
             ...item,
             status: nextStatus,
+            cost: nextCost,
             updatedAt: now,
             completedAt: nextStatus === "completed" ? now : undefined,
           }

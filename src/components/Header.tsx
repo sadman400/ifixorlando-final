@@ -1,6 +1,15 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { CalendarClock, LayoutDashboard, LogOut, Package, Tags, Users, Wrench } from "lucide-react";
+import {
+  CalendarClock,
+  LayoutDashboard,
+  LogOut,
+  Package,
+  RefreshCw,
+  Tags,
+  Users,
+  Wrench,
+} from "lucide-react";
 
 const navItems = [
   { to: "/" as const, label: "Dashboard", icon: LayoutDashboard },
@@ -18,6 +27,10 @@ export function Header() {
 
   const logout = async () => {
     await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+    window.location.reload();
+  };
+
+  const refresh = () => {
     window.location.reload();
   };
 
@@ -62,6 +75,15 @@ export function Header() {
             })}
             <button
               type="button"
+              onClick={refresh}
+              aria-label="Refresh page"
+              title="Refresh"
+              className="ml-2 flex h-9 w-9 items-center justify-center rounded-lg border border-sky-400/20 bg-sky-500/10 text-sky-400 transition-colors hover:border-sky-400/40 hover:bg-sky-500/15 hover:text-sky-300"
+            >
+              <RefreshCw className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
               onClick={logout}
               className="ml-2 flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             >
@@ -92,8 +114,16 @@ export function Header() {
                   {item.label}
                 </span>
               </Link>
-            );
-          })}
+              );
+            })}
+          <button
+            type="button"
+            onClick={refresh}
+            className="flex flex-col items-center justify-center gap-1 px-1 py-2 text-[10px] font-medium text-sky-400"
+          >
+            <RefreshCw className="h-5 w-5" />
+            <span>Refresh</span>
+          </button>
           <button
             type="button"
             onClick={logout}
