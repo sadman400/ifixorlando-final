@@ -177,6 +177,7 @@ function ViewMode({
                 ? `${stockQuantity} unit${stockQuantity === 1 ? "" : "s"}`
                 : "Not tracked"
             }
+            valueClassName="font-bold text-primary"
           />
           <Detail label="Parts Cost" value={`$${partsCost.toFixed(2)}`} />
           <Detail label="Start Time" value={formatDateTime(appt.scheduledDate)} />
@@ -243,12 +244,7 @@ function ViewMode({
           <div className="border-t border-border pt-2">
             <Row label="Total" value={`$${appointmentTotal(appt).toFixed(2)}`} bold />
             <Row label="Parts Cost" value={`$${partsCost.toFixed(2)}`} muted />
-            <Row
-              label="Profit"
-              value={`$${profit.toFixed(2)}`}
-              className="text-success"
-              bold
-            />
+            <Row label="Profit" value={`$${profit.toFixed(2)}`} className="text-success" bold />
           </div>
         </div>
       </Section>
@@ -520,13 +516,21 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function Detail({ label, value }: { label: string; value: string }) {
+function Detail({
+  label,
+  value,
+  valueClassName = "text-foreground",
+}: {
+  label: string;
+  value: string;
+  valueClassName?: string;
+}) {
   return (
     <div>
       <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
         {label}
       </p>
-      <p className="mt-0.5 text-sm text-foreground">{value}</p>
+      <p className={`mt-0.5 text-sm ${valueClassName}`}>{value}</p>
     </div>
   );
 }
