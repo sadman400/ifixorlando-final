@@ -56,7 +56,7 @@ function Stocks() {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 pb-8 sm:space-y-6 md:pb-0">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
@@ -130,33 +130,35 @@ function Stocks() {
         </form>
       )}
 
-      <div className="overflow-hidden rounded-xl border border-border">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
-            <tr>
-              <th className="w-24 px-4 py-3 text-left">Order</th>
-              <th className="px-4 py-3 text-left">Model</th>
-              <th className="px-4 py-3 text-left">Screen</th>
-              <th className="px-4 py-3 text-right">Qty</th>
-              <th className="hidden px-4 py-3 text-right sm:table-cell">Low Threshold</th>
-              <th className="px-4 py-3"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {orderedStocks.map((s, index) => (
-              <StockRow
-                key={s.id}
-                s={s}
-                isFirst={index === 0}
-                isLast={index === orderedStocks.length - 1}
-                onMoveUp={() => moveStock(s.id, -1)}
-                onMoveDown={() => moveStock(s.id, 1)}
-                onUpdate={(u) => updateStock(s.id, u)}
-                onDelete={() => deleteStock(s.id)}
-              />
-            ))}
-          </tbody>
-        </table>
+      <div className="max-w-full overflow-hidden rounded-xl border border-border">
+        <div className="overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
+          <table className="min-w-[660px] text-sm sm:w-full">
+            <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
+              <tr>
+                <th className="w-24 px-4 py-3 text-left">Order</th>
+                <th className="px-4 py-3 text-left">Model</th>
+                <th className="px-4 py-3 text-left">Screen</th>
+                <th className="px-4 py-3 text-right">Qty</th>
+                <th className="hidden px-4 py-3 text-right sm:table-cell">Low Threshold</th>
+                <th className="px-4 py-3"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {orderedStocks.map((s, index) => (
+                <StockRow
+                  key={s.id}
+                  s={s}
+                  isFirst={index === 0}
+                  isLast={index === orderedStocks.length - 1}
+                  onMoveUp={() => moveStock(s.id, -1)}
+                  onMoveDown={() => moveStock(s.id, 1)}
+                  onUpdate={(u) => updateStock(s.id, u)}
+                  onDelete={() => deleteStock(s.id)}
+                />
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
