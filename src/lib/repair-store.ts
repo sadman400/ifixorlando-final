@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import type { Appointment, StockItem, PricingItem, AppointmentStatus } from "./types";
+import type { Appointment, StockItem, PricingItem, SmsTemplate, AppointmentStatus } from "./types";
 
 const STORAGE_KEY = "ifixorlando-data";
 
@@ -7,6 +7,7 @@ export interface RepairData {
   appointments: Appointment[];
   stocks: StockItem[];
   pricing: PricingItem[];
+  smsTemplates: SmsTemplate[];
 }
 
 export interface RepairStore extends RepairData {
@@ -26,7 +27,8 @@ export interface RepairStore extends RepairData {
   deletePricing: (id: string) => void;
   reorderPricing: (pricing: PricingItem[]) => void;
 
-  seedSampleData: () => void;
+  updateSmsTemplate: (id: string, updates: Partial<SmsTemplate>) => void;
+
   clearAll: () => void;
 }
 
@@ -91,9 +93,66 @@ export const DEFAULT_STOCKS: StockItem[] = [
   { id: "s5", iPhoneModel: "iPhone 15", quantity: 1, costPerUnit: 110, lowStockThreshold: 2 },
 ];
 
+export const DEFAULT_SMS_TEMPLATES: SmsTemplate[] = [
+  {
+    id: "sms-confirmation",
+    key: "confirmation",
+    label: "Confirmation",
+    body: "iFixOrlando: Thank you for booking your repair {customerName}. Your {deviceModel} repair is confirmed and scheduled for {appointmentDate} at {startTime}. For your convenience, we will notify you with updates regarding your appointment via sms text messages. Thank you for choosing us, and we look forward to seeing you soon! {signature}",
+    sortOrder: 0,
+  },
+  {
+    id: "sms-reminder",
+    key: "reminder",
+    label: "Reminder",
+    body: "iFixOrlando: Hello {customerName}. Just a friendly reminder about your scheduled {deviceModel} repair appointment for today at {startTime}. We'll notify you as soon as your technician is en route. {signature}",
+    sortOrder: 1,
+  },
+  {
+    id: "sms-en-route",
+    key: "en-route",
+    label: "En Route",
+    body: "iFixOrlando: Good news {customerName}! {technicianName}, is currently en route to your location for your scheduled iPhone repair appointment. The estimated time of arrival (ETA) is {startTime}. You will receive a notification once your technician arrives at your location. {signature}",
+    sortOrder: 2,
+  },
+  {
+    id: "sms-arrival",
+    key: "arrival",
+    label: "Arrival",
+    body: "iFixOrlando: {technicianName} has arrived to repair your device. Thank you for your business and for choosing iFixOrlando! www.iFixOrlando.com",
+    sortOrder: 3,
+  },
+  {
+    id: "sms-appointment-delay",
+    key: "appointment-delay",
+    label: "Appointment Delay",
+    body: "iFixOrlando: Good news {customerName}! {technicianName}, is currently en route to your location for your scheduled iPhone repair appointment. Please note the slight delay. The estimated time of arrival is between {startTime} and {endTime}. We apologize for the delay and look forward to seeing you shortly. {signature}",
+    sortOrder: 4,
+  },
+  {
+    id: "sms-reschedule-request",
+    key: "reschedule-request",
+    label: "Reschedule Request",
+    body: "iFixOrlando: We've successfully rescheduled your {deviceModel} repair appointment to today at {startTime}. If you have any further questions or need assistance, feel free to reach out. We look forward to seeing you at {startTime} for your repair. {signature}",
+    sortOrder: 5,
+  },
+  {
+    id: "sms-cancellation",
+    key: "cancellation",
+    label: "Cancellation",
+    body: "iFixOrlando: Hello {customerName}. Per your request, your scheduled appointment has been canceled. {signature}",
+    sortOrder: 6,
+  },
+];
+
 export function loadStore(): RepairData {
   if (typeof window === "undefined") {
-    return { appointments: [], stocks: DEFAULT_STOCKS, pricing: DEFAULT_PRICING };
+    return {
+      appointments: [],
+      stocks: DEFAULT_STOCKS,
+      pricing: DEFAULT_PRICING,
+      smsTemplates: DEFAULT_SMS_TEMPLATES,
+    };
   }
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -103,10 +162,16 @@ export function loadStore(): RepairData {
         appointments: parsed.appointments || [],
         stocks: parsed.stocks || DEFAULT_STOCKS,
         pricing: parsed.pricing || DEFAULT_PRICING,
+        smsTemplates: parsed.smsTemplates || DEFAULT_SMS_TEMPLATES,
       };
     }
   } catch {}
-  return { appointments: [], stocks: DEFAULT_STOCKS, pricing: DEFAULT_PRICING };
+  return {
+    appointments: [],
+    stocks: DEFAULT_STOCKS,
+    pricing: DEFAULT_PRICING,
+    smsTemplates: DEFAULT_SMS_TEMPLATES,
+  };
 }
 
 export function saveStore(data: RepairData) {

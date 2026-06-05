@@ -22,7 +22,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { PhotoUpload } from "@/components/PhotoUpload";
-import { ArrowLeft, MapPin, MessageSquare, Send, Trash2 } from "lucide-react";
+import { ArrowLeft, MapPin, MessageSquare, Pencil, Send, Trash2 } from "lucide-react";
+import type { SmsTemplate } from "@/lib/types";
 
 export const Route = createFileRoute("/appointments/$id")({
   component: AppointmentDetail,
@@ -202,7 +203,7 @@ function ViewMode({
       <Section title="Address">
         {appt.address ? (
           <a
-            href={`https://maps.google.com/?q=${encodeURIComponent(
+            href={`https://maps.apple.com/?q=${encodeURIComponent(
               [appt.address, appt.unit].filter(Boolean).join(" "),
             )}`}
             target="_blank"
@@ -417,9 +418,29 @@ function EditForm({
 }
 
 function SmsMessages({ appt }: { appt: Appointment }) {
+  const { smsTemplates, updateSmsTemplate } = useRepairStore();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draftBody, setDraftBody] = useState("");
   const phone = (appt.phone || "").replace(/[^\d+]/g, "");
   const smsHref = (body: string) => `sms:${phone}?&body=${encodeURIComponent(body)}`;
-  const messages = smsTemplates(appt);
+  const messages = smsTemplates
+    .slice()
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+    .map((template) => ({
+      ...template,
+      renderedBody: renderSmsTemplate(template.body, appt),
+    }));
+
+  const startEditing = (template: SmsTemplate) => {
+    setEditingId(template.id);
+    setDraftBody(template.body);
+  };
+
+  const saveTemplate = (template: SmsTemplate) => {
+    updateSmsTemplate(template.id, { body: draftBody });
+    setEditingId(null);
+    setDraftBody("");
+  };
 
   return (
     <section className="glass-card rounded-xl p-4 sm:p-6">
@@ -439,15 +460,46 @@ function SmsMessages({ appt }: { appt: Appointment }) {
           <div key={message.label} className="rounded-lg border border-border p-3">
             <div className="mb-2 flex items-center justify-between gap-2">
               <p className="text-sm font-medium text-foreground">{message.label}</p>
-              <Button asChild size="sm" className="glow-primary">
-                <a href={smsHref(message.body)}>
-                  <Send className="mr-1 h-3 w-3" /> Send
-                </a>
-              </Button>
+              <div className="flex shrink-0 gap-2">
+                <Button variant="outline" size="sm" onClick={() => startEditing(message)}>
+                  <Pencil className="h-3 w-3" /> Edit
+                </Button>
+                <Button asChild size="sm" className="glow-primary">
+                  <a href={smsHref(message.renderedBody)}>
+                    <Send className="mr-1 h-3 w-3" /> Send
+                  </a>
+                </Button>
+              </div>
             </div>
-            <p className="whitespace-pre-wrap text-xs leading-relaxed text-muted-foreground">
-              {message.body}
-            </p>
+            {editingId === message.id ? (
+              <div className="space-y-2">
+                <Textarea
+                  rows={6}
+                  value={draftBody}
+                  onChange={(event) => setDraftBody(event.target.value)}
+                  className="text-xs leading-relaxed"
+                />
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setEditingId(null);
+                      setDraftBody("");
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button size="sm" className="glow-primary" onClick={() => saveTemplate(message)}>
+                    Save
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <p className="whitespace-pre-wrap text-xs leading-relaxed text-muted-foreground">
+                {message.renderedBody}
+              </p>
+            )}
           </div>
         ))}
       </div>
@@ -455,45 +507,26 @@ function SmsMessages({ appt }: { appt: Appointment }) {
   );
 }
 
-function smsTemplates(appt: Appointment) {
+function renderSmsTemplate(template: string, appt: Appointment) {
   const customerName = appt.customerName || "there";
   const technicianName = appt.technicianName || customerName;
-  const device = appointmentLabel(appt) || "iPhone";
+  const deviceModel = cleanModel(appt.iPhoneModel) || "iPhone";
   const appointmentDate = formatLongDate(appt.scheduledDate);
   const startTime = formatTime(appt.scheduledDate);
   const endTime = formatTime(appt.endDate || appt.scheduledDate);
   const signature = "iFixOrlando Support Team www.iFixOrlando.com (321) 355-4648";
 
-  return [
-    {
-      label: "Confirmation",
-      body: `iFixOrlando: Thank you for booking your repair ${customerName}. Your ${device} repair is confirmed and scheduled for ${appointmentDate} at ${startTime}. For your convenience, we will notify you with updates regarding your appointment via sms text messages. Thank you for choosing us, and we look forward to seeing you soon! ${signature}`,
-    },
-    {
-      label: "Reminder",
-      body: `iFixOrlando: Hello ${customerName}. Just a friendly reminder about your scheduled ${device} repair appointment for today at ${startTime}. We'll notify you as soon as your technician is en route. ${signature}`,
-    },
-    {
-      label: "En Route",
-      body: `iFixOrlando: Good news ${customerName}! ${technicianName}, is currently en route to your location for your scheduled iPhone repair appointment. The estimated time of arrival (ETA) is ${startTime}. You will receive a notification once your technician arrives at your location. ${signature}`,
-    },
-    {
-      label: "Arrival",
-      body: `iFixOrlando: ${technicianName} has arrived to repair your device. Thank you for your business and for choosing iFixOrlando! www.iFixOrlando.com`,
-    },
-    {
-      label: "Appointment Delay",
-      body: `iFixOrlando: Good news ${customerName}! ${technicianName}, is currently en route to your location for your scheduled iPhone repair appointment. Please note the slight delay. The estimated time of arrival is between ${startTime} and ${endTime}. We apologize for the delay and look forward to seeing you shortly. ${signature}`,
-    },
-    {
-      label: "Reschedule Request",
-      body: `iFixOrlando: We've successfully rescheduled your ${device} repair appointment to today at ${startTime}. If you have any further questions or need assistance, feel free to reach out. We look forward to seeing you at ${startTime} for your repair. ${signature}`,
-    },
-    {
-      label: "Cancellation",
-      body: `iFixOrlando: Hello ${customerName}. Per your request, your scheduled appointment has been canceled. ${signature}`,
-    },
-  ];
+  const values: Record<string, string> = {
+    customerName,
+    technicianName,
+    deviceModel,
+    appointmentDate,
+    startTime,
+    endTime,
+    signature,
+  };
+
+  return template.replace(/\{([a-zA-Z0-9]+)\}/g, (match, key: string) => values[key] ?? match);
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {

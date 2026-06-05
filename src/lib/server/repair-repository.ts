@@ -1,8 +1,13 @@
 import type { D1Database } from "@/lib/cloudflare-types";
 import { parseBusinessDateToIso } from "@/lib/date-time";
 import { createId } from "@/lib/id";
-import { DEFAULT_PRICING, DEFAULT_STOCKS, type RepairData } from "@/lib/repair-store";
-import type { AddOn, Appointment, PricingItem, StockItem } from "@/lib/types";
+import {
+  DEFAULT_PRICING,
+  DEFAULT_STOCKS,
+  DEFAULT_SMS_TEMPLATES,
+  type RepairData,
+} from "@/lib/repair-store";
+import type { AddOn, Appointment, PricingItem, SmsTemplate, StockItem } from "@/lib/types";
 
 interface CustomerRow {
   id: string;
@@ -64,6 +69,14 @@ interface PricingRow {
   sort_order: number;
 }
 
+interface SmsTemplateRow {
+  id: string;
+  template_key: string;
+  label: string;
+  body: string;
+  sort_order: number;
+}
+
 function rows<T>(result: { results?: T[] }) {
   return result.results ?? [];
 }
@@ -76,38 +89,52 @@ function noteValue(notes: string | null, label: string) {
 }
 
 export async function getRepairData(db: D1Database): Promise<RepairData> {
-  const [customerResult, appointmentResult, addOnResult, photoResult, stockResult, pricingResult] =
-    await Promise.all([
-      db
-        .prepare("SELECT id, name, phone, email, address, zip, unit_floor FROM customers")
-        .all<CustomerRow>(),
-      db
-        .prepare(
-          `SELECT id, customer_id, iphone_model, description, cost, charge, coupon, coupon_code,
+  const [
+    customerResult,
+    appointmentResult,
+    addOnResult,
+    photoResult,
+    stockResult,
+    pricingResult,
+    smsTemplateResult,
+  ] = await Promise.all([
+    db
+      .prepare("SELECT id, name, phone, email, address, zip, unit_floor FROM customers")
+      .all<CustomerRow>(),
+    db
+      .prepare(
+        `SELECT id, customer_id, iphone_model, description, cost, charge, coupon, coupon_code,
             scheduled_date, scheduled_end, technician_name, screen_color, status, notes,
             created_at, updated_at, completed_at
            FROM appointments
            ORDER BY scheduled_date DESC`,
-        )
-        .all<AppointmentRow>(),
-      db.prepare("SELECT appointment_id, name, price FROM appointment_addons").all<AddOnRow>(),
-      db.prepare("SELECT appointment_id, url FROM appointment_photos").all<PhotoRow>(),
-      db
-        .prepare(
-          `SELECT id, iphone_model, screen_color, quantity, cost_per_unit, low_stock_threshold, sort_order
+      )
+      .all<AppointmentRow>(),
+    db.prepare("SELECT appointment_id, name, price FROM appointment_addons").all<AddOnRow>(),
+    db.prepare("SELECT appointment_id, url FROM appointment_photos").all<PhotoRow>(),
+    db
+      .prepare(
+        `SELECT id, iphone_model, screen_color, quantity, cost_per_unit, low_stock_threshold, sort_order
            FROM stock_items
            ORDER BY sort_order, iphone_model, screen_color`,
-        )
-        .all<StockRow>(),
-      db
-        .prepare(
-          `SELECT id, iphone_model, repair_type, price, parts_cost, sort_order
+      )
+      .all<StockRow>(),
+    db
+      .prepare(
+        `SELECT id, iphone_model, repair_type, price, parts_cost, sort_order
            FROM pricing_items
            WHERE active = 1
            ORDER BY sort_order, iphone_model, repair_type`,
-        )
-        .all<PricingRow>(),
-    ]);
+      )
+      .all<PricingRow>(),
+    db
+      .prepare(
+        `SELECT id, template_key, label, body, sort_order
+           FROM sms_templates
+           ORDER BY sort_order, label`,
+      )
+      .all<SmsTemplateRow>(),
+  ]);
 
   const customers = new Map(rows(customerResult).map((customer) => [customer.id, customer]));
 
@@ -179,10 +206,19 @@ export async function getRepairData(db: D1Database): Promise<RepairData> {
     sortOrder: Number(item.sort_order) || 0,
   }));
 
+  const smsTemplates: SmsTemplate[] = rows(smsTemplateResult).map((template) => ({
+    id: template.id,
+    key: template.template_key,
+    label: template.label,
+    body: template.body,
+    sortOrder: Number(template.sort_order) || 0,
+  }));
+
   return {
     appointments,
     stocks: stocks.length > 0 ? stocks : DEFAULT_STOCKS,
     pricing: pricing.length > 0 ? pricing : DEFAULT_PRICING,
+    smsTemplates: smsTemplates.length > 0 ? smsTemplates : DEFAULT_SMS_TEMPLATES,
   };
 }
 
@@ -194,6 +230,7 @@ export async function replaceRepairData(db: D1Database, data: RepairData) {
     db.prepare("DELETE FROM customers"),
     db.prepare("DELETE FROM stock_items"),
     db.prepare("DELETE FROM pricing_items"),
+    db.prepare("DELETE FROM sms_templates"),
   ]);
 
   for (const appointment of data.appointments) {
@@ -244,6 +281,18 @@ export async function replaceRepairData(db: D1Database, data: RepairData) {
       ),
     );
   }
+
+  const smsTemplates = data.smsTemplates.length > 0 ? data.smsTemplates : DEFAULT_SMS_TEMPLATES;
+  await db.batch(
+    smsTemplates.map((template) =>
+      db
+        .prepare(
+          `INSERT INTO sms_templates (id, template_key, label, body, sort_order)
+           VALUES (?1, ?2, ?3, ?4, ?5)`,
+        )
+        .bind(template.id, template.key, template.label, template.body, template.sortOrder ?? 0),
+    ),
+  );
 }
 
 export async function upsertAppointment(

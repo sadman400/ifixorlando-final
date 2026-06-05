@@ -1,0 +1,50 @@
+
+ ⛅️ wrangler 4.82.2 (update available 4.95.0)
+─────────────────────────────────────────────
+Resource location: remote 
+
+🌀 Executing on remote database ifixorlando (508b5fdc-249f-4fd9-b721-c7a612ad3c7f):
+🌀 To execute on your local development database, remove the --remote flag from your wrangler command.
+🚣 Executed 1 command in 0.34ms
+[
+  {
+    "results": [
+      {
+        "id": "addon_76903eec-97c4-4e6d-9116-932ce20fc524",
+        "appointment_id": "1n259cwh",
+        "name": "Tempered glass",
+        "price": 15
+      },
+      {
+        "id": "addon_4504b9c1-503f-4170-b274-3c461bb37059",
+        "appointment_id": "9blerm79",
+        "name": "Tempered glass",
+        "price": 15
+      },
+      {
+        "id": "addon_4992f4c9-a4b9-4233-95f0-69792af1131e",
+        "appointment_id": "sk4qv1j8",
+        "name": "Tempered glass",
+        "price": 15
+      }
+    ],
+    "success": true,
+    "meta": {
+      "served_by": "v3-prod",
+      "served_by_region": "APAC",
+      "served_by_colo": "SIN",
+      "served_by_primary": true,
+      "timings": {
+        "sql_duration_ms": 0.3396
+      },
+      "duration": 0.3396,
+      "changes": 0,
+      "last_row_id": 0,
+      "changed_db": false,
+      "size_after": 131072,
+      "rows_read": 3,
+      "rows_written": 0,
+      "total_attempts": 1
+    }
+  }
+]

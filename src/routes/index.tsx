@@ -41,7 +41,7 @@ function fmtMoney(n: number) {
 }
 
 function Dashboard() {
-  const { appointments, seedSampleData } = useRepairStore();
+  const { appointments } = useRepairStore();
   const now = new Date();
 
   // Current month metrics
@@ -101,11 +101,6 @@ function Dashboard() {
           </p>
         </div>
         <div className="flex gap-2">
-          {appointments.length === 0 && (
-            <Button variant="outline" onClick={seedSampleData} className="text-xs sm:text-sm">
-              Load Sample Data
-            </Button>
-          )}
           <Link to="/appointments/new">
             <Button className="glow-primary text-xs sm:text-sm">+ New Appointment</Button>
           </Link>

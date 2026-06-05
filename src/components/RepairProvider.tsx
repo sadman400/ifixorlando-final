@@ -9,7 +9,6 @@ import {
   type RepairData,
 } from "@/lib/repair-store";
 import { findStockForAppointment } from "@/lib/inventory";
-import { generateSampleData } from "@/lib/sample-data";
 import type { Appointment, StockItem, PricingItem, AppointmentStatus } from "@/lib/types";
 
 export function RepairProvider({ children }: { children: ReactNode }) {
@@ -153,14 +152,30 @@ export function RepairProvider({ children }: { children: ReactNode }) {
     [persist],
   );
 
-  const seedSampleData = useCallback(() => {
-    const sample = generateSampleData();
-    setData(persist(sample));
-  }, [persist]);
+  const updateSmsTemplate = useCallback(
+    (id: string, updates: Partial<RepairData["smsTemplates"][number]>) => {
+      setData((prev) =>
+        persist({
+          ...prev,
+          smsTemplates: prev.smsTemplates.map((template) =>
+            template.id === id ? { ...template, ...updates } : template,
+          ),
+        }),
+      );
+    },
+    [persist],
+  );
 
   const clearAll = useCallback(() => {
-    setData(persist({ appointments: [], stocks: DEFAULT_STOCKS, pricing: DEFAULT_PRICING }));
-  }, [persist]);
+    setData(
+      persist({
+        appointments: [],
+        stocks: DEFAULT_STOCKS,
+        pricing: DEFAULT_PRICING,
+        smsTemplates: data.smsTemplates,
+      }),
+    );
+  }, [data.smsTemplates, persist]);
 
   return (
     <RepairContext.Provider
@@ -179,7 +194,7 @@ export function RepairProvider({ children }: { children: ReactNode }) {
         updatePricing,
         deletePricing,
         reorderPricing,
-        seedSampleData,
+        updateSmsTemplate,
         clearAll,
       }}
     >

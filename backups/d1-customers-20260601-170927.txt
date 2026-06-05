@@ -1,0 +1,252 @@
+
+ ⛅️ wrangler 4.82.2 (update available 4.95.0)
+─────────────────────────────────────────────
+Resource location: remote 
+
+🌀 Executing on remote database ifixorlando (508b5fdc-249f-4fd9-b721-c7a612ad3c7f):
+🌀 To execute on your local development database, remove the --remote flag from your wrangler command.
+🚣 Executed 1 command in 0.76ms
+[
+  {
+    "results": [
+      {
+        "id": "customer_5f035a1f-2a1e-4f44-bf10-4a26c93038e4",
+        "name": "Maria Davis",
+        "phone": "407-663-5397",
+        "email": "maria.davis@example.com",
+        "address": "8997 Orange Ave, Orlando FL",
+        "zip": "",
+        "unit_floor": "",
+        "created_at": "2026-06-01T01:36:43.189Z",
+        "updated_at": "2026-06-01T01:36:43.189Z"
+      },
+      {
+        "id": "customer_a62e999d-cc1e-4db7-b4b1-447376626efd",
+        "name": "Emma Brown",
+        "phone": "407-983-8859",
+        "email": "emma.brown@example.com",
+        "address": "5016 Orange Ave, Orlando FL",
+        "zip": "",
+        "unit_floor": "",
+        "created_at": "2026-06-01T01:36:41.947Z",
+        "updated_at": "2026-06-01T01:36:41.947Z"
+      },
+      {
+        "id": "customer_a874f414-63e6-41f5-a1f8-b90d1616c295",
+        "name": "Noah Lee",
+        "phone": "407-115-4978",
+        "email": "noah.lee@example.com",
+        "address": "5730 Orange Ave, Orlando FL",
+        "zip": "",
+        "unit_floor": "",
+        "created_at": "2026-06-01T01:36:39.482Z",
+        "updated_at": "2026-06-01T01:36:39.482Z"
+      },
+      {
+        "id": "customer_36eb32fc-b804-4ba1-bab7-81f25c48f47d",
+        "name": "Lucas Lee",
+        "phone": "407-181-3259",
+        "email": "lucas.lee@example.com",
+        "address": "2334 Orange Ave, Orlando FL",
+        "zip": "",
+        "unit_floor": "",
+        "created_at": "2026-06-01T01:36:38.231Z",
+        "updated_at": "2026-06-01T01:36:38.231Z"
+      },
+      {
+        "id": "customer_3e671bc5-647d-4e5d-9628-cfb32438fc46",
+        "name": "Olivia Martinez",
+        "phone": "407-807-9184",
+        "email": "olivia.martinez@example.com",
+        "address": "7246 Orange Ave, Orlando FL",
+        "zip": "",
+        "unit_floor": "",
+        "created_at": "2026-06-01T01:36:36.979Z",
+        "updated_at": "2026-06-01T01:36:36.979Z"
+      },
+      {
+        "id": "customer_5628ee74-4f82-465b-a6e4-8c91352c0f62",
+        "name": "Carlos Johnson",
+        "phone": "407-707-1229",
+        "email": "carlos.johnson@example.com",
+        "address": "3650 Orange Ave, Orlando FL",
+        "zip": "",
+        "unit_floor": "",
+        "created_at": "2026-06-01T01:36:35.749Z",
+        "updated_at": "2026-06-01T01:36:35.749Z"
+      },
+      {
+        "id": "customer_a7ada28f-66c4-484c-8654-e1960673c0ee",
+        "name": "Sofia Nguyen",
+        "phone": "407-137-8865",
+        "email": "sofia.nguyen@example.com",
+        "address": "1800 Orange Ave, Orlando FL",
+        "zip": "",
+        "unit_floor": "",
+        "created_at": "2026-06-01T01:36:34.247Z",
+        "updated_at": "2026-06-01T01:36:34.247Z"
+      },
+      {
+        "id": "customer_0fef7e55-1638-4e0e-b525-8c5ae004ae77",
+        "name": "Carlos Patel",
+        "phone": "407-136-4040",
+        "email": "carlos.patel@example.com",
+        "address": "6170 Orange Ave, Orlando FL",
+        "zip": "",
+        "unit_floor": "",
+        "created_at": "2026-06-01T01:36:32.791Z",
+        "updated_at": "2026-06-01T01:36:32.791Z"
+      },
+      {
+        "id": "customer_3e9503e0-cd93-4ab3-adcc-2e81c057bdfe",
+        "name": "James Martinez",
+        "phone": "407-775-2771",
+        "email": "james.martinez@example.com",
+        "address": "878 Orange Ave, Orlando FL",
+        "zip": "",
+        "unit_floor": "",
+        "created_at": "2026-06-01T01:36:31.568Z",
+        "updated_at": "2026-06-01T01:36:31.568Z"
+      },
+      {
+        "id": "customer_e6dd1b49-7cb9-49cc-ad79-afb3b0d66816",
+        "name": "James Davis",
+        "phone": "407-702-7322",
+        "email": "james.davis@example.com",
+        "address": "6267 Orange Ave, Orlando FL",
+        "zip": "",
+        "unit_floor": "",
+        "created_at": "2026-06-01T01:36:30.297Z",
+        "updated_at": "2026-06-01T01:36:30.297Z"
+      },
+      {
+        "id": "customer_0120f2b6-c31a-4ed6-b71b-8c8ee3403401",
+        "name": "Carlos Lee",
+        "phone": "407-264-1069",
+        "email": "carlos.lee@example.com",
+        "address": "8535 Orange Ave, Orlando FL",
+        "zip": "",
+        "unit_floor": "",
+        "created_at": "2026-06-01T01:36:29.060Z",
+        "updated_at": "2026-06-01T01:36:29.060Z"
+      },
+      {
+        "id": "customer_4bce882f-93fc-4fba-8f99-4b956f0b0b5d",
+        "name": "James Lee",
+        "phone": "407-558-4280",
+        "email": "james.lee@example.com",
+        "address": "2872 Orange Ave, Orlando FL",
+        "zip": "",
+        "unit_floor": "",
+        "created_at": "2026-06-01T01:36:27.804Z",
+        "updated_at": "2026-06-01T01:36:27.804Z"
+      },
+      {
+        "id": "customer_57fd6f28-7bd7-4cbe-9463-e5c7cf8e73db",
+        "name": "Carlos Nguyen",
+        "phone": "407-833-9632",
+        "email": "carlos.nguyen@example.com",
+        "address": "2301 Orange Ave, Orlando FL",
+        "zip": "",
+        "unit_floor": "",
+        "created_at": "2026-06-01T01:36:26.551Z",
+        "updated_at": "2026-06-01T01:36:26.551Z"
+      },
+      {
+        "id": "customer_b6ca7598-7540-450b-84bb-7151bdd6a7be",
+        "name": "Olivia Lee",
+        "phone": "407-425-8655",
+        "email": "olivia.lee@example.com",
+        "address": "8618 Orange Ave, Orlando FL",
+        "zip": "",
+        "unit_floor": "",
+        "created_at": "2026-06-01T01:36:25.044Z",
+        "updated_at": "2026-06-01T01:36:25.044Z"
+      },
+      {
+        "id": "customer_6b587daa-57bb-419f-98a4-5453efaffa91",
+        "name": "Carlos Brown",
+        "phone": "407-224-8860",
+        "email": "carlos.brown@example.com",
+        "address": "2592 Orange Ave, Orlando FL",
+        "zip": "",
+        "unit_floor": "",
+        "created_at": "2026-06-01T01:36:23.521Z",
+        "updated_at": "2026-06-01T01:36:40.714Z"
+      },
+      {
+        "id": "customer_7a762248-ee3d-470b-9ee5-c0ce66c4fbc2",
+        "name": "James Patel",
+        "phone": "407-263-8870",
+        "email": "james.patel@example.com",
+        "address": "6721 Orange Ave, Orlando FL",
+        "zip": "",
+        "unit_floor": "",
+        "created_at": "2026-06-01T01:36:22.248Z",
+        "updated_at": "2026-06-01T01:36:22.248Z"
+      },
+      {
+        "id": "customer_6753c567-cb1d-433d-9ded-baebbf22b216",
+        "name": "Noah Johnson",
+        "phone": "407-387-4219",
+        "email": "noah.johnson@example.com",
+        "address": "696 Orange Ave, Orlando FL",
+        "zip": "",
+        "unit_floor": "",
+        "created_at": "2026-06-01T01:36:20.985Z",
+        "updated_at": "2026-06-01T01:36:20.985Z"
+      },
+      {
+        "id": "customer_831834d4-eba4-4771-a6a5-811c26cf4d69",
+        "name": "Liam Brown",
+        "phone": "407-185-6031",
+        "email": "liam.brown@example.com",
+        "address": "6094 Orange Ave, Orlando FL",
+        "zip": "",
+        "unit_floor": "",
+        "created_at": "2026-06-01T01:36:19.731Z",
+        "updated_at": "2026-06-01T01:36:19.731Z"
+      },
+      {
+        "id": "customer_3b027ee1-f13d-445d-b045-d6e7aae5c952",
+        "name": "Noah Martinez",
+        "phone": "407-403-8130",
+        "email": "noah.martinez@example.com",
+        "address": "7689 Orange Ave, Orlando FL",
+        "zip": "",
+        "unit_floor": "",
+        "created_at": "2026-06-01T01:36:18.454Z",
+        "updated_at": "2026-06-01T01:36:18.454Z"
+      },
+      {
+        "id": "customer_49c2b3c2-b916-4102-8819-b3a814785ba5",
+        "name": "Emma Johnson",
+        "phone": "407-155-2422",
+        "email": "emma.johnson@example.com",
+        "address": "338 Orange Ave, Orlando FL",
+        "zip": "",
+        "unit_floor": "",
+        "created_at": "2026-06-01T01:36:17.156Z",
+        "updated_at": "2026-06-01T01:36:17.156Z"
+      }
+    ],
+    "success": true,
+    "meta": {
+      "served_by": "v3-prod",
+      "served_by_region": "APAC",
+      "served_by_colo": "SIN",
+      "served_by_primary": true,
+      "timings": {
+        "sql_duration_ms": 0.7582
+      },
+      "duration": 0.7582,
+      "changes": 0,
+      "last_row_id": 0,
+      "changed_db": false,
+      "size_after": 131072,
+      "rows_read": 40,
+      "rows_written": 0,
+      "total_attempts": 1
+    }
+  }
+]

@@ -55,6 +55,14 @@ export interface PricingItem {
   sortOrder?: number;
 }
 
+export interface SmsTemplate {
+  id: string;
+  key: string;
+  label: string;
+  body: string;
+  sortOrder?: number;
+}
+
 export function appointmentTotal(a: Appointment): number {
   const addOnsTotal = a.addOns.reduce((s, x) => s + x.price, 0);
   return Math.max(0, a.charge + addOnsTotal - a.coupon);

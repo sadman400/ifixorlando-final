@@ -53,10 +53,19 @@ export const pricingItemSchema = z.object({
   sortOrder: z.coerce.number().int().optional(),
 });
 
+export const smsTemplateSchema = z.object({
+  id: z.string(),
+  key: z.string(),
+  label: z.string(),
+  body: z.string(),
+  sortOrder: z.coerce.number().int().optional(),
+});
+
 export const repairDataSchema = z.object({
   appointments: z.array(appointmentSchema).default([]),
   stocks: z.array(stockItemSchema).default([]),
   pricing: z.array(pricingItemSchema).default([]),
+  smsTemplates: z.array(smsTemplateSchema).default([]),
 });
 
 export const zapierBookingSchema = z.record(z.unknown());
