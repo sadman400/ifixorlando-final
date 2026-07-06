@@ -31,6 +31,9 @@ export interface Appointment {
   status: AppointmentStatus;
   photos: string[];
   notes?: string;
+  agreementSignature?: string;
+  agreementSignerName?: string;
+  agreementSignedAt?: string;
   createdAt: string;
   updatedAt: string;
   completedAt?: string;

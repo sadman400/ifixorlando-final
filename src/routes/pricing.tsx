@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createId } from "@/lib/id";
 import { useRepairStore } from "@/lib/repair-store";
 import type { PricingItem } from "@/lib/types";
@@ -18,8 +18,8 @@ function Pricing() {
   const [draft, setDraft] = useState({
     iPhoneModel: "",
     repairType: "Screen Replacement",
-    price: 0,
-    partsCost: 0,
+    price: "",
+    partsCost: "",
   });
 
   const submit = (e: React.FormEvent) => {
@@ -30,9 +30,11 @@ function Pricing() {
       ...draft,
       iPhoneModel: draft.iPhoneModel.trim(),
       repairType: draft.repairType.trim(),
+      price: moneyValue(draft.price),
+      partsCost: moneyValue(draft.partsCost),
       sortOrder: orderedPricing.length,
     });
-    setDraft({ iPhoneModel: "", repairType: "Screen Replacement", price: 0, partsCost: 0 });
+    setDraft({ iPhoneModel: "", repairType: "Screen Replacement", price: "", partsCost: "" });
     setShowForm(false);
   };
 
@@ -87,21 +89,23 @@ function Pricing() {
           <div>
             <Label className="text-xs">Repair Price ($)</Label>
             <Input
-              type="number"
-              min="0"
-              step="0.01"
+              inputMode="decimal"
               value={draft.price}
-              onChange={(e) => setDraft({ ...draft, price: Number(e.target.value) })}
+              onChange={(e) => {
+                const price = e.target.value;
+                if (isMoneyDraft(price)) setDraft({ ...draft, price });
+              }}
             />
           </div>
           <div>
             <Label className="text-xs">Parts Cost ($)</Label>
             <Input
-              type="number"
-              min="0"
-              step="0.01"
+              inputMode="decimal"
               value={draft.partsCost}
-              onChange={(e) => setDraft({ ...draft, partsCost: Number(e.target.value) })}
+              onChange={(e) => {
+                const partsCost = e.target.value;
+                if (isMoneyDraft(partsCost)) setDraft({ ...draft, partsCost });
+              }}
             />
           </div>
           <div className="sm:col-span-5 flex justify-end gap-2">
@@ -183,27 +187,13 @@ function PricingCard({
           <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">
             Repair Price ($)
           </Label>
-          <Input
-            type="number"
-            min="0"
-            step="0.01"
-            value={p.price}
-            onChange={(e) => onUpdate({ price: Number(e.target.value) })}
-            className="h-9"
-          />
+          <MoneyInput value={p.price} onValueChange={(price) => onUpdate({ price })} />
         </div>
         <div>
           <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">
             Parts Cost ($)
           </Label>
-          <Input
-            type="number"
-            min="0"
-            step="0.01"
-            value={p.partsCost}
-            onChange={(e) => onUpdate({ partsCost: Number(e.target.value) })}
-            className="h-9"
-          />
+          <MoneyInput value={p.partsCost} onValueChange={(partsCost) => onUpdate({ partsCost })} />
         </div>
       </div>
       <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
@@ -212,6 +202,70 @@ function PricingCard({
       </div>
     </div>
   );
+}
+
+function MoneyInput({
+  value,
+  onValueChange,
+}: {
+  value: number;
+  onValueChange: (value: number) => void;
+}) {
+  const [text, setText] = useState(() => displayMoneyValue(value));
+  const [focused, setFocused] = useState(false);
+
+  useEffect(() => {
+    if (!focused) {
+      setText(displayMoneyValue(value));
+    }
+  }, [focused, value]);
+
+  const update = (next: string) => {
+    if (!isMoneyDraft(next)) return;
+
+    setText(next);
+
+    if (next !== "" && next !== ".") {
+      onValueChange(moneyValue(next));
+    }
+  };
+
+  return (
+    <Input
+      inputMode="decimal"
+      value={text}
+      onChange={(e) => update(e.target.value)}
+      onFocus={() => setFocused(true)}
+      onBlur={() => {
+        setFocused(false);
+
+        if (text === "." || text === "") {
+          setText(displayMoneyValue(value));
+          return;
+        }
+
+        const next = moneyValue(text);
+        onValueChange(next);
+        setText(displayMoneyValue(next));
+      }}
+      className="h-9"
+    />
+  );
+}
+
+function isMoneyDraft(value: string) {
+  return /^\d*(?:\.\d{0,2})?$/.test(value);
+}
+
+function displayMoneyValue(value: number) {
+  return Number.isFinite(value) ? String(value) : "";
+}
+
+function moneyValue(value: string) {
+  if (!value.trim()) return 0;
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function orderPricing(pricing: PricingItem[]) {

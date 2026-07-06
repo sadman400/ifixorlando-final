@@ -1,8 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  BUSINESS_TIME_ZONE,
   businessDateTimeLocalToIso,
-  formatBusinessDateTime,
   formatBusinessLongDate,
   formatBusinessTime,
   toBusinessDateTimeLocal,
@@ -18,11 +18,20 @@ import { useRepairStore } from "@/lib/repair-store";
 import { appointmentTotal, type Appointment, type AppointmentStatus } from "@/lib/types";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { PhotoUpload } from "@/components/PhotoUpload";
-import { ArrowLeft, MapPin, MessageSquare, Pencil, Send, Trash2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, MapPin, MessageSquare, Pencil, Send, Trash2 } from "lucide-react";
 import type { SmsTemplate } from "@/lib/types";
 
 export const Route = createFileRoute("/appointments/$id")({
@@ -127,6 +136,7 @@ function AppointmentDetail() {
           stockQuantity={stockMatch?.quantity}
           stockPartsCost={stockMatch?.costPerUnit}
           onNotesChange={(notes) => updateAppointment(id, { notes })}
+          onAgreementChange={(updates) => updateAppointment(id, updates)}
         />
       )}
 
@@ -148,11 +158,13 @@ function ViewMode({
   stockQuantity,
   stockPartsCost,
   onNotesChange,
+  onAgreementChange,
 }: {
   appt: Appointment;
   stockQuantity?: number;
   stockPartsCost?: number;
   onNotesChange: (notes: string) => void;
+  onAgreementChange: (updates: Partial<Appointment>) => void;
 }) {
   const partsCost = appt.cost > 0 ? appt.cost : (stockPartsCost ?? 0);
   const profit = appointmentTotal(appt) - partsCost;
@@ -163,7 +175,20 @@ function ViewMode({
         <div className="grid gap-3 sm:grid-cols-2">
           <Detail label="Name" value={appt.customerName} />
           <Detail label="Email" value={appt.email || "-"} />
-          <Detail label="Phone" value={appt.phone || "-"} />
+          <Detail
+            label="Phone"
+            value={appt.phone || "-"}
+            valueContent={
+              appt.phone ? (
+                <a
+                  href={`tel:${phoneHref(appt.phone)}`}
+                  className="font-bold text-primary hover:underline"
+                >
+                  {appt.phone}
+                </a>
+              ) : undefined
+            }
+          />
         </div>
       </Section>
 
@@ -180,7 +205,6 @@ function ViewMode({
             }
             valueClassName="font-bold text-primary"
           />
-          <Detail label="Parts Cost" value={`$${partsCost.toFixed(2)}`} />
           <Detail label="Start Time" value={formatDateTime(appt.scheduledDate)} />
           <Detail label="End Time" value={appt.endDate ? formatDateTime(appt.endDate) : "-"} />
           <Detail label="Coupon Code" value={appt.couponCode || "-"} />
@@ -190,6 +214,8 @@ function ViewMode({
           <Detail label="Description" value={appt.description || "-"} />
         </div>
       </Section>
+
+      <AgreementSection appt={appt} onAgreementChange={onAgreementChange} />
 
       <Section title="Technician Notes">
         <Textarea
@@ -250,6 +276,417 @@ function ViewMode({
         </div>
       </Section>
     </div>
+  );
+}
+
+function AgreementSection({
+  appt,
+  onAgreementChange,
+}: {
+  appt: Appointment;
+  onAgreementChange: (updates: Partial<Appointment>) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const signed = Boolean(appt.agreementSignedAt);
+
+  const clearAgreement = () => {
+    onAgreementChange({
+      agreementSignature: undefined,
+      agreementSignerName: undefined,
+      agreementSignedAt: undefined,
+    });
+  };
+
+  return (
+    <>
+      <section
+        className={
+          signed
+            ? "rounded-xl border border-success/50 bg-success/10 p-4 shadow-[0_0_0_1px_rgba(34,197,94,0.12)] sm:p-6"
+            : "rounded-xl border border-primary/40 bg-primary/10 p-4 shadow-[0_0_0_1px_rgba(250,166,26,0.12)] sm:p-6"
+        }
+      >
+        {signed ? (
+          <div className="space-y-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex min-w-0 items-start gap-3">
+                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-success" />
+                <div className="min-w-0">
+                  <h2 className="font-bold text-success">Agreement Signed</h2>
+                  <p className="text-xs text-muted-foreground">
+                    Signed by {appt.agreementSignerName || appt.customerName || "customer"} on{" "}
+                    {formatSignedAt(appt.agreementSignedAt)}
+                  </p>
+                </div>
+              </div>
+              <div className="flex shrink-0 gap-2">
+                <Button
+                  type="button"
+                  className="bg-success text-white hover:bg-success/90"
+                  onClick={() => setOpen(true)}
+                >
+                  <Pencil className="h-4 w-4" />
+                  Re-Sign
+                </Button>
+                <Button type="button" variant="outline" onClick={clearAgreement}>
+                  Clear
+                </Button>
+              </div>
+            </div>
+            {appt.agreementSignature ? (
+              <div className="rounded-lg bg-white p-3">
+                <img
+                  src={appt.agreementSignature}
+                  alt="Saved customer signature"
+                  className="h-24 w-full object-contain"
+                />
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <div className="flex items-start gap-3">
+            <Pencil className="mt-1 h-6 w-6 shrink-0 text-primary" />
+            <div className="min-w-0">
+              <h2 className="text-lg font-bold text-primary">Signature Pending</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Customer has not signed the repair agreement yet.
+              </p>
+              <Button
+                type="button"
+                className="mt-4 h-11 w-full px-6 text-base font-semibold sm:w-auto"
+                onClick={() => setOpen(true)}
+              >
+                <Pencil className="h-4 w-4" />
+                Sign Agreement
+              </Button>
+            </div>
+          </div>
+        )}
+      </section>
+      <AgreementModal
+        appt={appt}
+        open={open}
+        onOpenChange={setOpen}
+        onSave={(updates) => {
+          onAgreementChange(updates);
+          setOpen(false);
+        }}
+      />
+    </>
+  );
+}
+
+function AgreementModal({
+  appt,
+  open,
+  onOpenChange,
+  onSave,
+}: {
+  appt: Appointment;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSave: (updates: Partial<Appointment>) => void;
+}) {
+  const signatureRef = useRef<SVGSVGElement | null>(null);
+  const drawingRef = useRef(false);
+  const [signatureSize, setSignatureSize] = useState({ width: 720, height: 160 });
+  const [signaturePaths, setSignaturePaths] = useState<string[]>([]);
+  const [activeSignaturePath, setActiveSignaturePath] = useState("");
+  const [signerName, setSignerName] = useState(appt.customerName);
+  const [signedDate, setSignedDate] = useState(formatAgreementDate(new Date()));
+  const [hasSignature, setHasSignature] = useState(Boolean(appt.agreementSignature));
+
+  useEffect(() => {
+    if (!open) return;
+
+    setSignerName(appt.agreementSignerName || appt.customerName);
+    setSignedDate(formatAgreementDate(new Date()));
+    setHasSignature(Boolean(appt.agreementSignature));
+    setSignaturePaths([]);
+    setActiveSignaturePath("");
+
+    const frame = window.requestAnimationFrame(() => {
+      const rect = signatureRef.current?.getBoundingClientRect();
+      if (!rect) return;
+
+      setSignatureSize({ width: Math.max(rect.width, 1), height: Math.max(rect.height, 160) });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [appt.agreementSignature, appt.agreementSignerName, appt.customerName, open]);
+
+  const clearSignature = () => {
+    drawingRef.current = false;
+    setSignaturePaths([]);
+    setActiveSignaturePath("");
+    setHasSignature(false);
+  };
+
+  const saveSignature = () => {
+    const now = new Date();
+    const paths = activeSignaturePath ? [...signaturePaths, activeSignaturePath] : signaturePaths;
+    const nextSignature =
+      paths.length > 0
+        ? signatureSvgDataUrl(paths, signatureSize)
+        : hasSignature
+          ? appt.agreementSignature
+          : undefined;
+
+    onSave({
+      agreementSignature: nextSignature,
+      agreementSignerName: signerName.trim() || appt.customerName,
+      agreementSignedAt: now.toISOString(),
+    });
+  };
+
+  const startSignature = (point: { x: number; y: number }) => {
+    setActiveSignaturePath(`M ${point.x.toFixed(2)} ${point.y.toFixed(2)}`);
+    drawingRef.current = true;
+    setHasSignature(true);
+  };
+
+  const continueSignature = (point: { x: number; y: number }) => {
+    if (!drawingRef.current) return;
+
+    setActiveSignaturePath((path) => `${path} L ${point.x.toFixed(2)} ${point.y.toFixed(2)}`);
+  };
+
+  const stopSignature = () => {
+    if (!drawingRef.current) return;
+
+    drawingRef.current = false;
+    setActiveSignaturePath((path) => {
+      if (!path) return "";
+      setSignaturePaths((paths) => [...paths, path]);
+      return "";
+    });
+  };
+
+  const beginMouseSignature = (event: React.MouseEvent<SVGSVGElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    startSignature(signaturePointFromClient(event.currentTarget, event.clientX, event.clientY));
+  };
+
+  const drawMouseSignature = (event: React.MouseEvent<SVGSVGElement>) => {
+    if (!drawingRef.current) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    continueSignature(signaturePointFromClient(event.currentTarget, event.clientX, event.clientY));
+  };
+
+  const endMouseSignature = (event: React.MouseEvent<SVGSVGElement>) => {
+    if (!drawingRef.current) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    continueSignature(signaturePointFromClient(event.currentTarget, event.clientX, event.clientY));
+    stopSignature();
+  };
+
+  const beginTouchSignature = (event: React.TouchEvent<SVGSVGElement>) => {
+    const touch = event.touches[0];
+    if (!touch) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    startSignature(signaturePointFromClient(event.currentTarget, touch.clientX, touch.clientY));
+  };
+
+  const drawTouchSignature = (event: React.TouchEvent<SVGSVGElement>) => {
+    const touch = event.touches[0];
+    if (!touch || !drawingRef.current) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    continueSignature(signaturePointFromClient(event.currentTarget, touch.clientX, touch.clientY));
+  };
+
+  const endTouchSignature = (event: React.TouchEvent<SVGSVGElement>) => {
+    if (!drawingRef.current) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    stopSignature();
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[92vh] w-[calc(100vw-2rem)] max-w-3xl gap-0 overflow-hidden border-slate-200 bg-white p-0 text-slate-950 sm:rounded-lg">
+        <DialogHeader className="border-b border-slate-200 px-5 py-4 text-left">
+          <DialogTitle className="font-serif text-xl font-bold text-slate-950">
+            iFixOrlando CellPhone Repair Authorization
+          </DialogTitle>
+          <DialogDescription className="sr-only">
+            Repair authorization agreement with warranty terms and optional signature fields.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="max-h-[calc(92vh-8.5rem)] overflow-y-auto px-5 py-5 text-sm leading-relaxed text-slate-900">
+          <div className="space-y-5">
+            <p>
+              <strong>Warranty Terms:</strong> Limited Lifetime Warranty provided on all repair and
+              parts.
+            </p>
+            <p>
+              <strong>Warranty Covers:</strong> Defective parts by iFixOrlando. Warranty provided
+              only on the parts that was replaced during repair by iFixOrlando.
+            </p>
+            <p>
+              <strong>Warranty Does Not Cover:</strong> Cracks, physical damage to external and
+              internal parts of repaired device. Damage due to moisture, liquid, extreme humidity,
+              sand, food, dirt or similar substances.
+            </p>
+            <p>
+              Any part that gets replaced will have our store warranty sticker or identification. If
+              the sticker or identification has been altered, deleted, duplicated, removed, or made
+              illegible, iFixOrlando has the right to refuse any no-cost warranty related repairs.
+            </p>
+            <p>
+              <strong>Terms & Conditions:</strong> All sales are final. No returns unless the item
+              is defective and can not be repaired or replaced. No returns provided for parts
+              purchased without installation. If defected or malfunction, valid for replacement
+              only. Must be returned in the same condition as it was received. (See bottom of page
+              for additional details)
+            </p>
+
+            <div>
+              <p className="mb-2 font-semibold">
+                Please sign here:{" "}
+                <span className="font-normal italic text-slate-500">- optional</span>
+              </p>
+              <div className="relative rounded-md border border-dashed border-slate-400 bg-white">
+                <svg
+                  ref={signatureRef}
+                  viewBox={`0 0 ${signatureSize.width} ${signatureSize.height}`}
+                  className="block h-40 w-full cursor-crosshair touch-none select-none rounded-md"
+                  aria-label="Signature field"
+                  role="img"
+                  onMouseDown={beginMouseSignature}
+                  onMouseMove={drawMouseSignature}
+                  onMouseUp={endMouseSignature}
+                  onMouseLeave={stopSignature}
+                  onTouchStart={beginTouchSignature}
+                  onTouchMove={drawTouchSignature}
+                  onTouchEnd={endTouchSignature}
+                  onTouchCancel={endTouchSignature}
+                >
+                  <rect width="100%" height="100%" fill="white" />
+                  {appt.agreementSignature &&
+                  signaturePaths.length === 0 &&
+                  !activeSignaturePath ? (
+                    <image
+                      href={appt.agreementSignature}
+                      x="0"
+                      y="0"
+                      width={signatureSize.width}
+                      height={signatureSize.height}
+                      preserveAspectRatio="xMidYMid meet"
+                    />
+                  ) : null}
+                  {signaturePaths.map((path, index) => (
+                    <path
+                      key={`${path}-${index}`}
+                      d={path}
+                      fill="none"
+                      stroke="rgb(15, 23, 42)"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2.5"
+                    />
+                  ))}
+                  {activeSignaturePath ? (
+                    <path
+                      d={activeSignaturePath}
+                      fill="none"
+                      stroke="rgb(15, 23, 42)"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2.5"
+                    />
+                  ) : null}
+                </svg>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="absolute bottom-2 right-2 border-slate-800 bg-slate-950 text-white hover:bg-slate-800 hover:text-white"
+                  onClick={clearSignature}
+                >
+                  Clear
+                </Button>
+              </div>
+            </div>
+
+            <Field label="Please fill in your name: - optional">
+              <Input
+                value={signerName}
+                onChange={(event) => setSignerName(event.target.value)}
+                className="border-slate-300 bg-white text-slate-950"
+              />
+            </Field>
+
+            <Field label="Please fill date: - optional">
+              <Input
+                value={signedDate}
+                onChange={(event) => setSignedDate(event.target.value)}
+                className="border-slate-300 bg-white text-slate-950"
+              />
+            </Field>
+
+            <div className="space-y-5">
+              <p className="font-semibold">Additional Details:</p>
+              <p>
+                iFixOrlando does not take any responsibility for malfunction of other components of
+                the repaired device that may result after the repair has been made.
+              </p>
+              <p>
+                Smartphone or table that has protect or resistance against liquid or water will not
+                be water proof or water resistant after providing. Repair service that requires
+                device alteration. If the device has come into contact with water or liquid after
+                repair service, iFixOrlando does not take any responsibility and it voids the
+                warranty.
+              </p>
+              <p>
+                iFixOrlando has the right to refuse any non-cost warranty repairs or replacements if
+                any of the warranty terms are not complied.
+              </p>
+              <p>
+                No warranty for parts provided by customer. iFixOrlando is not responsible if device
+                has any other defective parts/problems other than the one requested to fix.
+                iFixOrlando does not take any responsibility for loss of data/personal information
+                that can be caused during the repair. iFixOrlando is not responsible for forgotten
+                logins, passwords, locks, iCloud locks and etc.
+              </p>
+              <p>
+                IFixOrlando does not take any responsibilities if any other issue determined on the
+                device during a repair or diagnostic beside the one that was requested to be fixed..
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter className="border-t border-slate-200 bg-slate-50 px-5 py-4 sm:flex-row sm:justify-end sm:space-x-2">
+          <DialogClose asChild>
+            <Button
+              type="button"
+              variant="outline"
+              className="border-slate-300 bg-slate-950 text-white hover:bg-slate-800 hover:text-white"
+            >
+              Cancel
+            </Button>
+          </DialogClose>
+          <Button
+            type="button"
+            className="bg-blue-600 text-white hover:bg-blue-700"
+            onClick={saveSignature}
+          >
+            Save Signature
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -514,7 +951,7 @@ function renderSmsTemplate(template: string, appt: Appointment) {
   const appointmentDate = formatLongDate(appt.scheduledDate);
   const startTime = formatTime(appt.scheduledDate);
   const endTime = formatTime(appt.endDate || appt.scheduledDate);
-  const signature = "iFixOrlando Support Team www.iFixOrlando.com (321) 355-4648";
+  const signature = "iFixOrlando Support Team\nwww.iFixOrlando.com\n(321) 355-4648";
 
   const values: Record<string, string> = {
     customerName,
@@ -552,10 +989,12 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function Detail({
   label,
   value,
+  valueContent,
   valueClassName = "text-foreground",
 }: {
   label: string;
   value: string;
+  valueContent?: React.ReactNode;
   valueClassName?: string;
 }) {
   return (
@@ -563,7 +1002,7 @@ function Detail({
       <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
         {label}
       </p>
-      <p className={`mt-0.5 text-sm ${valueClassName}`}>{value}</p>
+      <p className={`mt-0.5 text-sm ${valueClassName}`}>{valueContent ?? value}</p>
     </div>
   );
 }
@@ -597,8 +1036,12 @@ function cleanModel(value: string) {
   return cleanInventoryModel(value);
 }
 
+function phoneHref(value: string) {
+  return value.replace(/[^\d+]/g, "");
+}
+
 function formatDateTime(value: string) {
-  return formatBusinessDateTime(value);
+  return formatAppointmentDetailDateTime(value);
 }
 
 function formatLongDate(value: string) {
@@ -607,4 +1050,92 @@ function formatLongDate(value: string) {
 
 function formatTime(value: string) {
   return formatBusinessTime(value);
+}
+
+function formatAgreementDate(value: Date) {
+  return `${value.getMonth() + 1} / ${value.getDate()} / ${value.getFullYear()}`;
+}
+
+function signaturePointFromClient(svg: SVGSVGElement, clientX: number, clientY: number) {
+  const rect = svg.getBoundingClientRect();
+  const viewBox = svg.viewBox.baseVal;
+
+  return {
+    x: ((clientX - rect.left) / Math.max(rect.width, 1)) * viewBox.width,
+    y: ((clientY - rect.top) / Math.max(rect.height, 1)) * viewBox.height,
+  };
+}
+
+function signatureSvgDataUrl(paths: string[], size: { width: number; height: number }) {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size.width}" height="${size.height}" viewBox="0 0 ${size.width} ${size.height}"><rect width="100%" height="100%" fill="white"/>${paths.map(signaturePathMarkup).join("")}</svg>`;
+
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+function signaturePathMarkup(path: string) {
+  return `<path d="${path}" fill="none" stroke="rgb(15, 23, 42)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"/>`;
+}
+
+function formatSignedAt(value?: string) {
+  if (!value) return "-";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+
+  return date.toLocaleString("en-US", {
+    timeZone: BUSINESS_TIME_ZONE,
+    month: "numeric",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
+
+function formatAppointmentDetailDateTime(value: string) {
+  if (!value) return "-";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+
+  const parts = new Map(
+    new Intl.DateTimeFormat("en-US", {
+      timeZone: BUSINESS_TIME_ZONE,
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    })
+      .formatToParts(date)
+      .map((part) => [part.type, part.value]),
+  );
+  const day = Number(parts.get("day"));
+  const weekday = parts.get("weekday") ?? "";
+  const month = parts.get("month") ?? "";
+  const year = parts.get("year") ?? "";
+  const hour = parts.get("hour") ?? "";
+  const minute = parts.get("minute") ?? "";
+  const dayPeriod = parts.get("dayPeriod") ?? "";
+
+  return `${weekday} ${month} ${day}${ordinalSuffix(day)}, ${year}, ${hour}:${minute} ${dayPeriod}`;
+}
+
+function ordinalSuffix(day: number) {
+  const teen = day % 100;
+
+  if (teen >= 11 && teen <= 13) return "th";
+
+  switch (day % 10) {
+    case 1:
+      return "st";
+    case 2:
+      return "nd";
+    case 3:
+      return "rd";
+    default:
+      return "th";
+  }
 }

@@ -57,4 +57,14 @@ VALUES
     'Cancellation',
     'iFixOrlando: Hello {customerName}. Per your request, your scheduled appointment has been canceled. {signature}',
     6
+  ),
+  (
+    'sms-no-answer',
+    'no-answer',
+    'No Answer',
+    'iFixOrlando:
+Hi {customerName}. We are calling regarding an appointment scheduled for an {deviceModel} repair. We are unable to reach you. Please give us a call at your earliest opportunity. We look forward to hearing from you.
+
+{signature}',
+    7
   );

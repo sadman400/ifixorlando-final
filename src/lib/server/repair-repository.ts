@@ -34,6 +34,9 @@ interface AppointmentRow {
   screen_color: string;
   status: Appointment["status"];
   notes: string | null;
+  agreement_signature: string | null;
+  agreement_signer_name: string;
+  agreement_signed_at: string | null;
   created_at: string;
   updated_at: string;
   completed_at: string | null;
@@ -105,6 +108,7 @@ export async function getRepairData(db: D1Database): Promise<RepairData> {
       .prepare(
         `SELECT id, customer_id, iphone_model, description, cost, charge, coupon, coupon_code,
             scheduled_date, scheduled_end, technician_name, screen_color, status, notes,
+            agreement_signature, agreement_signer_name, agreement_signed_at,
             created_at, updated_at, completed_at
            FROM appointments
            ORDER BY scheduled_date DESC`,
@@ -181,6 +185,9 @@ export async function getRepairData(db: D1Database): Promise<RepairData> {
       status: appointment.status,
       photos: photosByAppointment.get(appointment.id) ?? [],
       notes: appointment.notes ?? undefined,
+      agreementSignature: appointment.agreement_signature ?? undefined,
+      agreementSignerName: appointment.agreement_signer_name || undefined,
+      agreementSignedAt: appointment.agreement_signed_at ?? undefined,
       createdAt: appointment.created_at,
       updatedAt: appointment.updated_at,
       completedAt: appointment.completed_at ?? undefined,
@@ -308,9 +315,10 @@ export async function upsertAppointment(
       `INSERT INTO appointments (
         id, customer_id, iphone_model, description, cost, charge, coupon, coupon_code,
         scheduled_date, scheduled_end, technician_name, screen_color, status, notes, source,
+        agreement_signature, agreement_signer_name, agreement_signed_at,
         created_at, updated_at, completed_at
       )
-      VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18)
+      VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21)
       ON CONFLICT(id) DO UPDATE SET
         customer_id = excluded.customer_id,
         iphone_model = excluded.iphone_model,
@@ -326,6 +334,9 @@ export async function upsertAppointment(
         status = excluded.status,
         notes = excluded.notes,
         source = excluded.source,
+        agreement_signature = excluded.agreement_signature,
+        agreement_signer_name = excluded.agreement_signer_name,
+        agreement_signed_at = excluded.agreement_signed_at,
         updated_at = excluded.updated_at,
         completed_at = excluded.completed_at`,
     )
@@ -345,6 +356,9 @@ export async function upsertAppointment(
       appointment.status,
       appointment.notes ?? null,
       source,
+      appointment.agreementSignature ?? null,
+      appointment.agreementSignerName ?? "",
+      appointment.agreementSignedAt ?? null,
       appointment.createdAt || now,
       appointment.updatedAt || now,
       appointment.completedAt ?? null,
